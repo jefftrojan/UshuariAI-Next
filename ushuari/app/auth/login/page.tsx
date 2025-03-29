@@ -1,8 +1,8 @@
 // app/auth/login/page.tsx
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -11,16 +11,34 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, redirectToDashboard } = useAuthStore();
+
+  useEffect(() => {
+    // Check if role=admin is in the URL
+    const role = searchParams.get("role");
+    if (role === "admin") {
+      setIsAdminLogin(true);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const success = await login(email, password);
+      // If admin login, pass the role
+      const loginParams = isAdminLogin
+        ? { email, password, role: "admin" }
+        : { email, password };
+      const success = await login(
+        email,
+        password,
+        isAdminLogin ? "admin" : undefined
+      );
 
       if (success) {
         const user = useAuthStore.getState().user;
@@ -44,16 +62,30 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
+            {isAdminLogin ? "Admin Login" : "Sign in to your account"}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{" "}
-            <Link
-              href="/auth/register"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              create a new account
-            </Link>
+            {isAdminLogin ? (
+              <>
+                Or{" "}
+                <Link
+                  href="/auth/login"
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  sign in as a regular user
+                </Link>
+              </>
+            ) : (
+              <>
+                Or{" "}
+                <Link
+                  href="/auth/register"
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  create a new account
+                </Link>
+              </>
+            )}
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -124,9 +156,19 @@ export default function LoginPage() {
               disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading
+                ? "Signing in..."
+                : isAdminLogin
+                ? "Sign in as Admin"
+                : "Sign in"}
             </button>
           </div>
+
+          {isAdminLogin && (
+            <div className="text-center text-sm text-gray-500">
+              <p>Admin access is restricted to authorized personnel only.</p>
+            </div>
+          )}
         </form>
       </div>
     </div>

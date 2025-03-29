@@ -1,4 +1,4 @@
-// middleware.ts
+// middleware.ts - with enhanced debugging
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose"; // Using jose for edge runtime compatibility
@@ -8,9 +8,12 @@ const PUBLIC_ROUTES = [
   "/",
   "/auth/login",
   "/auth/register",
+  "/auth/register/user",
+  "/auth/register/organization",
   "/api/auth/login",
   "/api/auth/register",
   "/api/auth/me",
+  "/api/auth/logout",
 ];
 
 // Role-based route prefixes
@@ -26,8 +29,10 @@ async function verifyJWT(token: string) {
     const JWT_SECRET = process.env.JWT_SECRET || "ushuari-jwt-secret";
     const secretKey = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secretKey);
+    console.log("JWT verified successfully", payload);
     return { verified: true, payload };
   } catch (error) {
+    console.error("JWT verification failed", error);
     return { verified: false, payload: null };
   }
 }
@@ -35,12 +40,15 @@ async function verifyJWT(token: string) {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  console.log(`Processing request to: ${pathname}`);
+
   // Check if the route is public
   if (
     PUBLIC_ROUTES.some(
       (route) => pathname === route || pathname.startsWith(`${route}/`)
     )
   ) {
+    console.log(`Public route access: ${pathname}`);
     return NextResponse.next();
   }
 
@@ -49,6 +57,7 @@ export async function middleware(request: NextRequest) {
 
   // If no token, redirect to login or return 401 for API routes
   if (!token) {
+    console.log(`No token found, redirecting from: ${pathname}`);
     if (pathname.startsWith("/api/")) {
       return NextResponse.json(
         { success: false, message: "Not authenticated" },
@@ -67,11 +76,15 @@ export async function middleware(request: NextRequest) {
     }
 
     const userRole = payload.role as "admin" | "organization" | "user";
+    console.log(`User authenticated with role: ${userRole}`);
 
     // Check role-based route access
     for (const [role, prefixes] of Object.entries(ROLE_ROUTES)) {
       if (prefixes.some((prefix) => pathname.startsWith(prefix))) {
         if (role !== userRole) {
+          console.log(
+            `Role mismatch. Required: ${role}, User has: ${userRole}`
+          );
           // For API routes, return 403
           if (pathname.startsWith("/api/")) {
             return NextResponse.json(
@@ -83,6 +96,7 @@ export async function middleware(request: NextRequest) {
           // Redirect to appropriate dashboard
           const redirectPath =
             ROLE_ROUTES[userRole as keyof typeof ROLE_ROUTES][0];
+          console.log(`Redirecting to: ${redirectPath}`);
           return NextResponse.redirect(new URL(redirectPath, request.url));
         }
       }
@@ -91,6 +105,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   } catch (error) {
     // Invalid token
+    console.error("Auth error in middleware:", error);
     if (pathname.startsWith("/api/")) {
       return NextResponse.json(
         { success: false, message: "Invalid token" },

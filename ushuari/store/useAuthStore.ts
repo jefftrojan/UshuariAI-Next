@@ -1,4 +1,4 @@
-// store/useAuthStore.ts
+// store/useAuthStore.ts - Modified version
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import axios from "axios";
@@ -39,6 +39,9 @@ interface AuthState {
     router: AppRouterInstance,
     allowedRoles: UserRole[]
   ) => Promise<boolean>;
+
+  // Helper function that was missing
+  getDashboardPath: () => string;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -64,15 +67,18 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
               error: null,
             });
+            console.log("Login successful:", response.data.user);
             return true;
           } else {
             set({
               isLoading: false,
               error: response.data.message || "Login failed",
             });
+            console.error("Login failed:", response.data.message);
             return false;
           }
         } catch (error: any) {
+          console.error("Login error:", error);
           set({
             isLoading: false,
             error: error.response?.data?.message || "Login failed",
@@ -98,15 +104,18 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
               error: null,
             });
+            console.log("Registration successful:", response.data.user);
             return true;
           } else {
             set({
               isLoading: false,
               error: response.data.message || "Registration failed",
             });
+            console.error("Registration failed:", response.data.message);
             return false;
           }
         } catch (error: any) {
+          console.error("Registration error:", error);
           set({
             isLoading: false,
             error: error.response?.data?.message || "Registration failed",
@@ -136,9 +145,14 @@ export const useAuthStore = create<AuthState>()(
 
         set({ isLoading: true });
         try {
-          const response = await axios.get("/api/auth/me");
+          console.log("Checking auth status...");
+          // Explicitly add withCredentials: true to ensure cookies are sent
+          const response = await axios.get("/api/auth/me", {
+            withCredentials: true,
+          });
 
           if (response.data.success) {
+            console.log("Auth check successful:", response.data.user);
             set({
               user: response.data.user,
               isAuthenticated: true,
@@ -146,6 +160,7 @@ export const useAuthStore = create<AuthState>()(
             });
             return true;
           } else {
+            console.log("Auth check failed: User not authenticated");
             set({
               user: null,
               isAuthenticated: false,
@@ -154,6 +169,7 @@ export const useAuthStore = create<AuthState>()(
             return false;
           }
         } catch (error) {
+          console.error("Auth check error:", error);
           set({
             user: null,
             isAuthenticated: false,
@@ -163,23 +179,26 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Function to redirect to the appropriate dashboard based on user role
-      redirectToDashboard: (router) => {
+      // NEW FUNCTION: Added getDashboardPath
+      getDashboardPath: () => {
         const { user } = get();
-        if (!user) return;
+        if (!user) return "/auth/login";
 
         switch (user.role) {
           case "admin":
-            router.push("/admin/dashboard");
-            break;
+            return "/admin/dashboard";
           case "organization":
-            router.push("/organization/dashboard");
-            break;
+            return "/organization/dashboard";
           case "user":
           default:
-            router.push("/dashboard");
-            break;
+            return "/dashboard";
         }
+      },
+
+      // Function to redirect to the appropriate dashboard based on user role
+      redirectToDashboard: (router) => {
+        const path = get().getDashboardPath();
+        router.push(path);
       },
 
       // Function to redirect to login page
@@ -193,6 +212,7 @@ export const useAuthStore = create<AuthState>()(
         const isAuth = await get().checkAuth();
 
         if (!isAuth) {
+          console.log("Access denied: User not authenticated");
           get().redirectToLogin(router);
           return false;
         }
@@ -201,12 +221,17 @@ export const useAuthStore = create<AuthState>()(
 
         // Check if user has the allowed role
         if (user && !allowedRoles.includes(user.role)) {
+          console.log(
+            `Access denied: User role ${user.role} not in allowed roles:`,
+            allowedRoles
+          );
           // User doesn't have the allowed role, redirect to appropriate dashboard
           get().redirectToDashboard(router);
           return false;
         }
 
         // User is authenticated and has the correct role
+        console.log(`Access granted: User role ${user?.role} is allowed`);
         return true;
       },
     }),

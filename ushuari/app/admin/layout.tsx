@@ -26,7 +26,14 @@ export default function AdminLayout({
 
       // Redirect if not the right role
       if (user?.role !== "admin") {
-        const path = useAuthStore.getState().getDashboardPath();
+        const { user } = useAuthStore.getState();
+        const path =
+          user?.role === "admin"
+            ? "/admin/dashboard"
+            : user?.role === "organization"
+            ? "/organization/dashboard"
+            : "/dashboard";
+
         router.push(path);
         return;
       }
@@ -37,8 +44,9 @@ export default function AdminLayout({
     init();
   }, [checkAuth, router, user]);
 
-  const handleLogout = () => {
-    logout(router);
+  const handleLogout = async () => {
+    await logout();
+    router.push("/auth/login");
   };
 
   if (isLoading) {
