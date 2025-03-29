@@ -1,4 +1,3 @@
-// app/admin/dashboard/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -36,21 +35,18 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { user, checkAuth, logout } = useAuthStore();
 
-  // Check authentication on load
   useEffect(() => {
     const init = async () => {
       const isAuth = await checkAuth();
       if (!isAuth) {
         router.push("/auth/login");
       } else if (user?.role !== "admin") {
-        // Redirect to appropriate dashboard based on role
         if (user?.role === "organization") {
           router.push("/organization/dashboard");
         } else if (user?.role === "user") {
           router.push("/dashboard");
         }
       } else {
-        // Load data
         await fetchData();
         setIsLoading(false);
       }
@@ -61,13 +57,11 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      // Fetch organizations
       const orgResponse = await axios.get("/api/admin/organizations");
       if (orgResponse.data.success) {
         setOrganizations(orgResponse.data.organizations);
       }
 
-      // Fetch unread notifications
       const notifyResponse = await axios.get(
         "/api/admin/notifications?status=unread"
       );
@@ -76,9 +70,6 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-
-      // Fallback to mock data if API fails
-      console.log("Using mock data as fallback");
       setOrganizations([
         {
           id: "org-1",
@@ -127,16 +118,12 @@ export default function AdminDashboard() {
       );
 
       if (response.data.success) {
-        // Update local state
         setOrganizations((prev) =>
           prev.map((org) =>
             org.id === orgId ? { ...org, status: newStatus } : org
           )
         );
-
-        // Also update notifications
         await fetchData();
-
         toast.success(`Organization ${newStatus}`);
       } else {
         toast.error(response.data.message || "Failed to update organization");
@@ -144,8 +131,6 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("Error updating organization:", error);
       toast.error("An error occurred while updating the organization");
-
-      // Still update UI optimistically
       setOrganizations((prev) =>
         prev.map((org) =>
           org.id === orgId ? { ...org, status: newStatus } : org
@@ -157,14 +142,11 @@ export default function AdminDashboard() {
   const markNotificationAsRead = async (notificationId: string) => {
     try {
       await axios.post(`/api/admin/notifications/${notificationId}/read`);
-
-      // Update local state
       setNotifications((prev) =>
         prev.filter((notification) => notification.id !== notificationId)
       );
     } catch (error) {
       console.error("Error marking notification as read:", error);
-      // Still update UI optimistically
       setNotifications((prev) =>
         prev.filter((notification) => notification.id !== notificationId)
       );
@@ -173,22 +155,24 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
+    <div className="min-h-screen bg-black">
+      <header className="bg-gray-900/80 backdrop-blur-md border-b border-green-900/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-800">Ushuari Admin</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-600 text-transparent bg-clip-text">
+            Ushuari Admin
+          </h1>
           <div className="flex items-center space-x-4">
-            <span className="text-gray-700">{user?.name}</span>
+            <span className="text-white/80">{user?.name}</span>
             <button
               onClick={handleLogout}
-              className="bg-blue-700 text-white hover:bg-blue-800 px-4 py-2 rounded-md text-sm font-medium"
+              className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-all duration-300"
             >
               Sign Out
             </button>
@@ -198,29 +182,29 @@ export default function AdminDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <h2 className="text-2xl font-bold text-white mb-4">
             Admin Dashboard
           </h2>
-          <p className="text-gray-600">
+          <p className="text-white/70">
             Manage organizations, users, and platform settings.
           </p>
         </div>
 
         {/* Admin Notifications */}
         {notifications.length > 0 && (
-          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-blue-800 mb-2">
+          <div className="mb-8 bg-blue-900/20 backdrop-blur-sm border border-blue-900/30 rounded-xl p-4">
+            <h3 className="text-lg font-medium text-blue-400 mb-2">
               Notifications
             </h3>
             <div className="space-y-2">
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className="flex justify-between items-center bg-white p-3 rounded-md shadow-sm"
+                  className="flex justify-between items-center bg-gray-900/50 p-3 rounded-md border border-gray-800"
                 >
                   <div>
-                    <p className="text-gray-800">{notification.message}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-white">{notification.message}</p>
+                    <p className="text-xs text-white/50">
                       {new Date(notification.createdAt).toLocaleString()}
                     </p>
                   </div>
@@ -228,14 +212,14 @@ export default function AdminDashboard() {
                     {notification.type === "new_organization" && (
                       <Link
                         href={`/admin/organizations?highlight=${notification.organizationId}`}
-                        className="text-blue-600 hover:text-blue-800 text-sm"
+                        className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
                       >
                         View
                       </Link>
                     )}
                     <button
                       onClick={() => markNotificationAsRead(notification.id)}
-                      className="text-gray-600 hover:text-gray-800 text-sm"
+                      className="text-white/60 hover:text-white text-sm transition-colors"
                     >
                       Dismiss
                     </button>
@@ -247,41 +231,41 @@ export default function AdminDashboard() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-medium mb-4">Total Organizations</h3>
-            <p className="text-3xl font-bold text-blue-600">
+          <div className="bg-gray-900/60 backdrop-blur-sm border border-green-900/20 rounded-xl p-6 hover:shadow-lg hover:shadow-green-900/10 transition-all duration-300">
+            <h3 className="text-lg font-medium text-white/80 mb-4">Total Organizations</h3>
+            <p className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-600 text-transparent bg-clip-text">
               {organizations.length}
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-medium mb-4">Pending Approval</h3>
-            <p className="text-3xl font-bold text-yellow-500">
+          <div className="bg-gray-900/60 backdrop-blur-sm border border-yellow-900/20 rounded-xl p-6 hover:shadow-lg hover:shadow-yellow-900/10 transition-all duration-300">
+            <h3 className="text-lg font-medium text-white/80 mb-4">Pending Approval</h3>
+            <p className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-amber-600 text-transparent bg-clip-text">
               {organizations.filter((org) => org.status === "pending").length}
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-medium mb-4">Approved</h3>
-            <p className="text-3xl font-bold text-green-500">
+          <div className="bg-gray-900/60 backdrop-blur-sm border border-emerald-900/20 rounded-xl p-6 hover:shadow-lg hover:shadow-emerald-900/10 transition-all duration-300">
+            <h3 className="text-lg font-medium text-white/80 mb-4">Approved</h3>
+            <p className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-600 text-transparent bg-clip-text">
               {organizations.filter((org) => org.status === "approved").length}
             </p>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-medium">Organizations</h2>
+        <div className="bg-gray-900/60 backdrop-blur-sm border border-green-900/20 rounded-xl shadow-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-green-900/20 flex justify-between items-center">
+            <h2 className="text-xl font-medium text-white">Organizations</h2>
             <div className="flex space-x-2">
               <Link
                 href="/admin/users"
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                className="px-4 py-2 bg-gray-800/70 hover:bg-gray-800 text-white rounded-md border border-gray-700 transition-colors"
               >
                 Manage Users
               </Link>
               <Link
                 href="/admin/calls"
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                className="px-4 py-2 bg-gray-800/70 hover:bg-gray-800 text-white rounded-md border border-gray-700 transition-colors"
               >
                 View All Calls
               </Link>
@@ -289,85 +273,85 @@ export default function AdminDashboard() {
           </div>
 
           {organizations.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-white/50">
               No organizations found.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-800">
+                <thead className="bg-gray-800/50">
                   <tr>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
                     >
                       Organization
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
                     >
                       Contact
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
                     >
                       Status
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
                     >
                       Date Joined
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
                     >
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-800">
                   {organizations.map((org) => (
-                    <tr key={org.id}>
+                    <tr key={org.id} className="hover:bg-gray-900/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-white">
                           {org.name}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-white/60">
                           {org.description}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-white">
                           {org.contactPerson}
                         </div>
-                        <div className="text-sm text-gray-500">{org.email}</div>
+                        <div className="text-sm text-white/60">{org.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                          className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
                           ${
                             org.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
+                              ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
                               : org.status === "approved"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                              : "bg-red-500/10 text-red-400 border border-red-500/20"
                           }`}
                         >
                           {org.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
                         {new Date(org.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-3">
                           <Link
                             href={`/admin/organizations/${org.id}`}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-blue-400 hover:text-blue-300 transition-colors"
                           >
                             View
                           </Link>
@@ -377,7 +361,7 @@ export default function AdminDashboard() {
                                 onClick={() =>
                                   updateOrganizationStatus(org.id, "approved")
                                 }
-                                className="text-green-600 hover:text-green-900"
+                                className="text-green-400 hover:text-green-300 transition-colors"
                               >
                                 Approve
                               </button>
@@ -385,7 +369,7 @@ export default function AdminDashboard() {
                                 onClick={() =>
                                   updateOrganizationStatus(org.id, "rejected")
                                 }
-                                className="text-red-600 hover:text-red-900"
+                                className="text-red-400 hover:text-red-300 transition-colors"
                               >
                                 Reject
                               </button>

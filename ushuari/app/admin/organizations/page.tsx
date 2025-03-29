@@ -1,4 +1,4 @@
-// app/admin/organizations/page.tsx - Enhanced version
+// app/admin/organizations/page.tsx - Matching your structure with enhancements
 "use client";
 
 import { useEffect, useState } from "react";
@@ -40,22 +40,48 @@ export default function AdminOrganizationsPage() {
                 `org-${highlightedOrgId}`
               );
               if (element) {
-                element.scrollIntoView({ behavior: "smooth" });
-                element.classList.add("bg-yellow-50");
+                element.scrollIntoView({ behavior: "smooth", block: "center" });
+                element.classList.add("ring-2", "ring-yellow-400", "bg-yellow-50");
                 // Remove highlight after 3 seconds
                 setTimeout(() => {
-                  element.classList.remove("bg-yellow-50");
+                  element.classList.remove("ring-2", "ring-yellow-400", "bg-yellow-50");
                 }, 3000);
               }
             }, 500);
           }
         } else {
           toast.error("Failed to fetch organizations");
+          // Fallback to mock data in case of API failure
+          setOrganizations([
+            {
+              id: "org-1",
+              name: "Legal Experts LLC",
+              email: "contact@legalexperts.com",
+              description: "Specializing in employment and contract law",
+              status: "approved",
+              createdAt: new Date(
+                Date.now() - 30 * 24 * 60 * 60 * 1000
+              ).toISOString(),
+              contactPerson: "Jane Smith",
+              specialties: ["Employment Law", "Contract Law"],
+            },
+            {
+              id: "org-2",
+              name: "Tenant Rights Group",
+              email: "help@tenantrightsgroup.org",
+              description: "Advocating for tenant rights and housing issues",
+              status: "pending",
+              createdAt: new Date(
+                Date.now() - 3 * 24 * 60 * 60 * 1000
+              ).toISOString(),
+              contactPerson: "Michael Johnson",
+              specialties: ["Housing Law", "Tenant Rights"],
+            },
+          ]);
         }
       } catch (error) {
         console.error("Error fetching organizations:", error);
         toast.error("An error occurred while fetching organizations");
-
         // Fallback to mock data in case of API failure
         setOrganizations([
           {
@@ -138,55 +164,60 @@ export default function AdminOrganizationsPage() {
   });
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Manage Organizations</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Manage Organizations</h1>
+          <p className="text-gray-600 mt-1">
+            Review and approve legal service providers
+          </p>
+        </div>
         <Link
           href="/admin/dashboard"
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded transition-colors"
         >
           Back to Dashboard
         </Link>
       </div>
 
       {/* Filtering options */}
-      <div className="mb-6">
-        <div className="flex space-x-2">
+      <div className="mb-6 bg-white rounded-lg p-4 shadow-sm">
+        <div className="flex flex-wrap gap-2">
           <button
-            className={`px-4 py-2 rounded ${
+            className={`px-4 py-2 rounded transition-colors ${
               filter === "all"
                 ? "bg-gray-800 text-white"
-                : "bg-gray-200 text-gray-800"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
             }`}
             onClick={() => setFilter("all")}
           >
             All Organizations
           </button>
           <button
-            className={`px-4 py-2 rounded ${
+            className={`px-4 py-2 rounded transition-colors ${
               filter === "pending"
                 ? "bg-yellow-500 text-white"
-                : "bg-gray-200 text-gray-800"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
             }`}
             onClick={() => setFilter("pending")}
           >
             Pending Approval
           </button>
           <button
-            className={`px-4 py-2 rounded ${
+            className={`px-4 py-2 rounded transition-colors ${
               filter === "approved"
                 ? "bg-green-500 text-white"
-                : "bg-gray-200 text-gray-800"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
             }`}
             onClick={() => setFilter("approved")}
           >
             Approved
           </button>
           <button
-            className={`px-4 py-2 rounded ${
+            className={`px-4 py-2 rounded transition-colors ${
               filter === "rejected"
                 ? "bg-red-500 text-white"
-                : "bg-gray-200 text-gray-800"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
             }`}
             onClick={() => setFilter("rejected")}
           >
@@ -196,24 +227,24 @@ export default function AdminOrganizationsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded shadow">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-2">Total</h3>
           <p className="text-3xl font-bold">{organizations.length}</p>
         </div>
-        <div className="bg-white p-4 rounded shadow">
+        <div className="bg-white p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-2">Pending</h3>
           <p className="text-3xl font-bold text-yellow-500">
             {organizations.filter((o) => o.status === "pending").length}
           </p>
         </div>
-        <div className="bg-white p-4 rounded shadow">
+        <div className="bg-white p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-2">Approved</h3>
           <p className="text-3xl font-bold text-green-500">
             {organizations.filter((o) => o.status === "approved").length}
           </p>
         </div>
-        <div className="bg-white p-4 rounded shadow">
+        <div className="bg-white p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-2">Rejected</h3>
           <p className="text-3xl font-bold text-red-500">
             {organizations.filter((o) => o.status === "rejected").length}
@@ -222,7 +253,7 @@ export default function AdminOrganizationsPage() {
       </div>
 
       {/* Organizations Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
@@ -262,7 +293,7 @@ export default function AdminOrganizationsPage() {
                   <tr
                     key={org.id}
                     id={`org-${org.id}`}
-                    className="hover:bg-gray-50 transition duration-150"
+                    className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-gray-900">
@@ -311,7 +342,7 @@ export default function AdminOrganizationsPage() {
                       <div className="flex space-x-2">
                         <Link
                           href={`/admin/organizations/${org.id}`}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-blue-600 hover:text-blue-900 hover:underline"
                         >
                           View
                         </Link>
@@ -321,7 +352,7 @@ export default function AdminOrganizationsPage() {
                               onClick={() =>
                                 updateOrganizationStatus(org.id, "approved")
                               }
-                              className="text-green-600 hover:text-green-900"
+                              className="text-green-600 hover:text-green-900 hover:underline"
                             >
                               Approve
                             </button>
@@ -329,7 +360,7 @@ export default function AdminOrganizationsPage() {
                               onClick={() =>
                                 updateOrganizationStatus(org.id, "rejected")
                               }
-                              className="text-red-600 hover:text-red-900"
+                              className="text-red-600 hover:text-red-900 hover:underline"
                             >
                               Reject
                             </button>
@@ -340,7 +371,7 @@ export default function AdminOrganizationsPage() {
                             onClick={() =>
                               updateOrganizationStatus(org.id, "approved")
                             }
-                            className="text-green-600 hover:text-green-900"
+                            className="text-green-600 hover:text-green-900 hover:underline"
                           >
                             Reconsider
                           </button>

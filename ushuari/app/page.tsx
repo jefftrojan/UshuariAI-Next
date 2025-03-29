@@ -40,7 +40,7 @@ export default function Home() {
       </div>
 
       {/* Header/Navigation */}
-      <header className="sticky top-0 z-10 backdrop-blur-md border-b border-green-900/20">
+      <header className="sticky top-0 z-100 backdrop-blur-md border-b border-green-900/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex">

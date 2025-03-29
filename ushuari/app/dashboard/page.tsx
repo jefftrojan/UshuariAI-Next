@@ -99,22 +99,22 @@ export default function UserDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
+    <div className="min-h-screen bg-black">
+      <header className="bg-gray-900/80 backdrop-blur-md border-b border-green-900/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-800">Ushuari</h1>
+          <h1 className="text-2xl font-bold text-white">Ushuari</h1>
           <div className="flex items-center space-x-4">
-            <span className="text-gray-700">{user?.name}</span>
+            <span className="text-emerald-100">{user?.name}</span>
             <button
               onClick={handleLogout}
-              className="bg-blue-700 text-white hover:bg-blue-800 px-4 py-2 rounded-md text-sm font-medium"
+              className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-all duration-300"
             >
               Sign Out
             </button>
@@ -124,41 +124,41 @@ export default function UserDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <h2 className="text-2xl font-bold text-white mb-4">
             Welcome, {user?.name}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-white/70">
             Make calls to get legal assistance from qualified organizations.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="md:col-span-3 bg-white rounded-lg shadow-md p-6">
+          <div className="md:col-span-3 bg-gray-900/40 backdrop-blur-sm border border-green-900/20 rounded-2xl p-6 shadow-lg shadow-green-900/10">
             <CallRecorder onCallRecorded={handleCallRecorded} />
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-medium mb-4">Your Stats</h3>
+          <div className="bg-gray-900/40 backdrop-blur-sm border border-green-900/20 rounded-2xl p-6 shadow-lg shadow-green-900/10">
+            <h3 className="text-lg font-medium text-white/80 mb-4">Your Stats</h3>
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-gray-600">Total Calls:</span>
-                <span className="font-medium">{calls.length}</span>
+                <span className="text-white/70">Total Calls:</span>
+                <span className="font-medium text-white">{calls.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Pending:</span>
-                <span className="font-medium">
+                <span className="text-white/70">Pending:</span>
+                <span className="font-medium text-white">
                   {calls.filter((c) => c.status === "pending").length}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">In Progress:</span>
-                <span className="font-medium">
+                <span className="text-white/70">In Progress:</span>
+                <span className="font-medium text-white">
                   {calls.filter((c) => c.status === "in-progress").length}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Resolved:</span>
-                <span className="font-medium">
+                <span className="text-white/70">Resolved:</span>
+                <span className="font-medium text-white">
                   {calls.filter((c) => c.status === "resolved").length}
                 </span>
               </div>
@@ -166,66 +166,66 @@ export default function UserDashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-medium mb-4">Your Calls</h2>
+        <div className="bg-gray-900/40 backdrop-blur-sm border border-green-900/20 rounded-2xl p-6 shadow-lg shadow-green-900/10">
+          <h2 className="text-xl font-medium text-white mb-4">Your Calls</h2>
 
           {calls.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-white/50">
               You haven't submitted any legal inquiries yet.
               <br />
               Use the call recorder above to make your first inquiry.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-800">
+                <thead className="bg-gray-800/50">
                   <tr>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
                     >
                       Title
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
                     >
                       Status
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
                     >
                       Priority
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
                     >
                       Date
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
                     >
                       Organization
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
                     >
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-800">
                   {calls.map((call) => (
                     <tr key={call.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-white">
                           {call.title}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-white/50">
                           {call.description.substring(0, 50)}
                           {call.description.length > 50 ? "..." : ""}
                         </div>
@@ -235,12 +235,12 @@ export default function UserDashboard() {
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                           ${
                             call.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
+                              ? "bg-yellow-500/10 text-yellow-400"
                               : call.status === "in-progress"
-                              ? "bg-blue-100 text-blue-800"
+                              ? "bg-blue-500/10 text-blue-400"
                               : call.status === "resolved"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-green-500/10 text-green-400"
+                              : "bg-red-500/10 text-red-400"
                           }`}
                         >
                           {call.status}
@@ -251,27 +251,27 @@ export default function UserDashboard() {
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                           ${
                             call.priority === "low"
-                              ? "bg-green-100 text-green-800"
+                              ? "bg-green-500/10 text-green-400"
                               : call.priority === "medium"
-                              ? "bg-blue-100 text-blue-800"
+                              ? "bg-blue-500/10 text-blue-400"
                               : call.priority === "high"
-                              ? "bg-orange-100 text-orange-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-orange-500/10 text-orange-400"
+                              : "bg-red-500/10 text-red-400"
                           }`}
                         >
                           {call.priority}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white/50">
                         {new Date(call.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white/50">
                         {call.organizationName || "Unassigned"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <Link
                           href={`/dashboard/calls/${call.id}`}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-emerald-400 hover:text-emerald-300 transition-colors"
                         >
                           View
                         </Link>
