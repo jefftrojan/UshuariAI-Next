@@ -1,4 +1,3 @@
-// app/auth/login/page.tsx (simplified example)
 "use client";
 
 import { useState } from "react";
@@ -11,8 +10,9 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const router = useRouter();
-  const login = useAuthStore((state) => state.login);
+  const { login, redirectToDashboard } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,22 +22,16 @@ export default function LoginPage() {
       const success = await login(email, password);
 
       if (success) {
-        // Get current user from store
         const user = useAuthStore.getState().user;
         toast.success(`Welcome back, ${user?.name}!`);
 
-        // Redirect based on role
-        if (user?.role === "admin") {
-          router.push("/admin/dashboard");
-        } else if (user?.role === "organization") {
-          router.push("/organization/dashboard");
-        } else {
-          router.push("/dashboard");
-        }
+        // Use the auth store's redirect function
+        redirectToDashboard(router);
       } else {
         toast.error("Invalid email or password");
       }
     } catch (error) {
+      console.error("Login error:", error);
       toast.error("An error occurred during login");
     } finally {
       setIsLoading(false);

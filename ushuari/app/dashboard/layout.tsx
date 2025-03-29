@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
-import Link from "next/link";
 
 export default function DashboardLayout({
   children,
@@ -11,39 +10,34 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, isAuthenticated, checkAuth, logout } = useAuthStore();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { ensureCorrectRoleAccess } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const init = async () => {
-      const isAuth = await checkAuth();
-      if (!isAuth) {
-        router.push("/auth/login");
-      } else if (user?.role !== "user") {
-        // Redirect to appropriate dashboard based on role
-        if (user?.role === "admin") {
-          router.push("/admin/dashboard");
-        } else if (user?.role === "organization") {
-          router.push("/organization/dashboard");
-        }
-      }
+    const checkAccess = async () => {
+      // Only allow users with "user" role
+      const hasAccess = await ensureCorrectRoleAccess(router, ["user"]);
+      setIsLoading(false);
     };
 
-    init();
-  }, [checkAuth, router, user]);
+    checkAccess();
+  }, [ensureCorrectRoleAccess, router]);
 
-  const handleLogout = () => {
-    logout();
-    router.push("/auth/login");
-  };
-
-  if (!user || !isAuthenticated) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Your user dashboard layout */}
+      {children}
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-gray-100 flex">

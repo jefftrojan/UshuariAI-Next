@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import axios from "axios";
+import { AppRouterInstance } from "next/navigation";
 
 export type UserRole = "admin" | "organization" | "user";
 
@@ -11,6 +12,7 @@ export interface User {
   email: string;
   role: UserRole;
   organizationId?: string;
+  organizationStatus?: "pending" | "approved" | "rejected";
 }
 
 interface AuthState {
@@ -19,6 +21,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
 
+  // Auth actions
   login: (email: string, password: string) => Promise<boolean>;
   register: (
     name: string,
@@ -28,11 +31,19 @@ interface AuthState {
   ) => Promise<boolean>;
   logout: () => void;
   checkAuth: () => Promise<boolean>;
+
+  // Navigation helpers
+  redirectToDashboard: (router: AppRouterInstance) => void;
+  redirectToLogin: (router: AppRouterInstance) => void;
+  ensureCorrectRoleAccess: (
+    router: AppRouterInstance,
+    allowedRoles: UserRole[]
+  ) => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
       isLoading: false,
@@ -114,6 +125,10 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: async () => {
+        if (get().isAuthenticated && get().user) {
+          return true;
+        }
+
         set({ isLoading: true });
         try {
           const response = await axios.get("/api/auth/me");
@@ -141,6 +156,53 @@ export const useAuthStore = create<AuthState>()(
           });
           return false;
         }
+      },
+
+      // Function to redirect to the appropriate dashboard based on user role
+      redirectToDashboard: (router) => {
+        const { user } = get();
+        if (!user) return;
+
+        switch (user.role) {
+          case "admin":
+            router.push("/admin/dashboard");
+            break;
+          case "organization":
+            router.push("/organization/dashboard");
+            break;
+          case "user":
+          default:
+            router.push("/dashboard");
+            break;
+        }
+      },
+
+      // Function to redirect to login page
+      redirectToLogin: (router) => {
+        router.push("/auth/login");
+      },
+
+      // Function to ensure user has correct role access
+      ensureCorrectRoleAccess: async (router, allowedRoles) => {
+        // Check if user is authenticated
+        const isAuth = await get().checkAuth();
+
+        if (!isAuth) {
+          get().redirectToLogin(router);
+          return false;
+        }
+
+        const { user } = get();
+
+        // Check if user has the allowed role
+        if (user && !allowedRoles.includes(user.role)) {
+          // User doesn't have the allowed role, redirect to appropriate dashboard
+          get().redirectToDashboard(router);
+          return false;
+        }
+
+        // User is authenticated and has the correct role
+        return true;
       },
     }),
     {

@@ -1,14 +1,42 @@
-import { Metadata } from "next";
+// app/auth/layout.tsx
+"use client";
 
-export const metadata: Metadata = {
-  title: "Authentication - Ushuari",
-  description: "Sign in or register for Ushuari legal assistance platform",
-};
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  const router = useRouter();
+  const { isAuthenticated, user, checkAuth, redirectToDashboard } =
+    useAuthStore();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const init = async () => {
+      const isAuth = await checkAuth();
+
+      // If already authenticated, redirect to appropriate dashboard
+      if (isAuth && user) {
+        redirectToDashboard(router);
+      }
+
+      setIsLoading(false);
+    };
+
+    init();
+  }, [checkAuth, router, user, redirectToDashboard, isAuthenticated]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 }
