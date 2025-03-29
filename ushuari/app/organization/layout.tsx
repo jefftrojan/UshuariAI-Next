@@ -1,7 +1,9 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
+import Link from "next/link";
 
 export default function OrganizationLayout({
   children,
@@ -9,37 +11,26 @@ export default function OrganizationLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, checkAuth, logout } = useAuthStore();
+  const { user, ensureCorrectRoleAccess, logout } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
-    const init = async () => {
-      const isAuth = await checkAuth();
-
-      if (!isAuth) {
-        router.push("/auth/login");
-        return;
-      }
-
-      // Redirect if not the right role
-      if (user?.role !== "organization") {
-        const path = useAuthStore.getState().getDashboardPath();
-        router.push(path);
-        return;
-      }
-
+    const checkAccess = async () => {
+      // Only allow users with "organization" role
+      const hasAccess = await ensureCorrectRoleAccess(router, ["organization"]);
       setIsLoading(false);
     };
 
-    init();
-  }, [checkAuth, router, user]);
+    checkAccess();
+  }, [ensureCorrectRoleAccess, router]);
 
-  const handleLogout = () => {
-    logout(router);
+  const handleLogout = async () => {
+    await logout();
+    router.push("/auth/login");
   };
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
@@ -128,9 +119,9 @@ export default function OrganizationLayout({
           </button>
 
           <div className="flex items-center">
-            <span className="text-gray-800 mr-2">{user?.name}</span>
+            <span className="text-gray-800 mr-2">{user.name}</span>
             <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center text-white font-medium">
-              {user?.name.charAt(0)}
+              {user.name.charAt(0)}
             </div>
           </div>
         </header>

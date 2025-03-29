@@ -1,17 +1,13 @@
 // middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "ushuari-jwt-secret";
+import { jwtVerify } from "jose"; // Using jose for edge runtime compatibility
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
   "/",
   "/auth/login",
   "/auth/register",
-  "/auth/register/user",
-  "/auth/register/organization",
   "/api/auth/login",
   "/api/auth/register",
   "/api/auth/me",
@@ -24,7 +20,19 @@ const ROLE_ROUTES = {
   user: ["/dashboard", "/api/dashboard"],
 };
 
-export function middleware(request: NextRequest) {
+// Helper function to verify JWT in edge runtime
+async function verifyJWT(token: string) {
+  try {
+    const JWT_SECRET = process.env.JWT_SECRET || "ushuari-jwt-secret";
+    const secretKey = new TextEncoder().encode(JWT_SECRET);
+    const { payload } = await jwtVerify(token, secretKey);
+    return { verified: true, payload };
+  } catch (error) {
+    return { verified: false, payload: null };
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check if the route is public
@@ -52,11 +60,13 @@ export function middleware(request: NextRequest) {
 
   try {
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      role: string;
-    };
-    const userRole = decoded.role as "admin" | "organization" | "user";
+    const { verified, payload } = await verifyJWT(token);
+
+    if (!verified || !payload) {
+      throw new Error("Invalid token");
+    }
+
+    const userRole = payload.role as "admin" | "organization" | "user";
 
     // Check role-based route access
     for (const [role, prefixes] of Object.entries(ROLE_ROUTES)) {

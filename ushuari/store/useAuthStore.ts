@@ -4,10 +4,8 @@ import { persist } from "zustand/middleware";
 import axios from "axios";
 import { AppRouterInstance } from "next/navigation";
 
-// Define user roles
 export type UserRole = "admin" | "organization" | "user";
 
-// User interface
 export interface User {
   id: string;
   name: string;
@@ -17,7 +15,6 @@ export interface User {
   organizationStatus?: "pending" | "approved" | "rejected";
 }
 
-// Auth state interface
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
@@ -37,13 +34,13 @@ interface AuthState {
 
   // Navigation helpers
   redirectToDashboard: (router: AppRouterInstance) => void;
+  redirectToLogin: (router: AppRouterInstance) => void;
   ensureCorrectRoleAccess: (
     router: AppRouterInstance,
     allowedRoles: UserRole[]
   ) => Promise<boolean>;
 }
 
-// Create the auth store with persistence
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -121,13 +118,14 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         try {
           await axios.post("/api/auth/logout");
+        } catch (error) {
+          console.error("Logout error:", error);
+        } finally {
           set({
             user: null,
             isAuthenticated: false,
             error: null,
           });
-        } catch (error) {
-          console.error("Logout error:", error);
         }
       },
 
@@ -184,13 +182,18 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      // Function to redirect to login page
+      redirectToLogin: (router) => {
+        router.push("/auth/login");
+      },
+
       // Function to ensure user has correct role access
       ensureCorrectRoleAccess: async (router, allowedRoles) => {
         // Check if user is authenticated
         const isAuth = await get().checkAuth();
 
         if (!isAuth) {
-          router.push("/auth/login");
+          get().redirectToLogin(router);
           return false;
         }
 
@@ -198,6 +201,7 @@ export const useAuthStore = create<AuthState>()(
 
         // Check if user has the allowed role
         if (user && !allowedRoles.includes(user.role)) {
+          // User doesn't have the allowed role, redirect to appropriate dashboard
           get().redirectToDashboard(router);
           return false;
         }
