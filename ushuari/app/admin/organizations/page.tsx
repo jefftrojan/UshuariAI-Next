@@ -167,21 +167,21 @@ export default function AdminOrganizationsPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Manage Organizations</h1>
+          <h1 className="text-2xl font-bold text-gray-200">Manage Organizations</h1>
           <p className="text-gray-600 mt-1">
             Review and approve legal service providers
           </p>
         </div>
         <Link
           href="/admin/dashboard"
-          className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded transition-colors"
+          className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white px-4 py-2 rounded transition-colors"
         >
           Back to Dashboard
         </Link>
       </div>
 
       {/* Filtering options */}
-      <div className="mb-6 bg-white rounded-lg p-4 shadow-sm">
+      <div className="mb-6 bg-gray-900/60 backdrop-blur-sm border border-green-900/20 rounded-lg p-4 shadow-sm">
         <div className="flex flex-wrap gap-2">
           <button
             className={`px-4 py-2 rounded transition-colors ${
@@ -197,7 +197,7 @@ export default function AdminOrganizationsPage() {
             className={`px-4 py-2 rounded transition-colors ${
               filter === "pending"
                 ? "bg-yellow-500 text-white"
-                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                : "bg-yellow-500 text-white"
             }`}
             onClick={() => setFilter("pending")}
           >
@@ -207,7 +207,7 @@ export default function AdminOrganizationsPage() {
             className={`px-4 py-2 rounded transition-colors ${
               filter === "approved"
                 ? "bg-green-500 text-white"
-                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                : "bg-green-500 text-white"
             }`}
             onClick={() => setFilter("approved")}
           >
@@ -217,7 +217,7 @@ export default function AdminOrganizationsPage() {
             className={`px-4 py-2 rounded transition-colors ${
               filter === "rejected"
                 ? "bg-red-500 text-white"
-                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                : "bg-red-500 text-white"
             }`}
             onClick={() => setFilter("rejected")}
           >
@@ -228,23 +228,23 @@ export default function AdminOrganizationsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow-sm">
+        <div className="bg-gray-900/60 backdrop-blur-sm border border-green-900/20 p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-2">Total</h3>
           <p className="text-3xl font-bold">{organizations.length}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm">
+        <div className="bg-gray-900/60 backdrop-blur-sm border border-green-900/20 p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-2">Pending</h3>
           <p className="text-3xl font-bold text-yellow-500">
             {organizations.filter((o) => o.status === "pending").length}
           </p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm">
+        <div className="bg-gray-900/60 backdrop-blur-sm border border-green-900/20 p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-2">Approved</h3>
           <p className="text-3xl font-bold text-green-500">
             {organizations.filter((o) => o.status === "approved").length}
           </p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm">
+        <div className="bg-gray-900/60 backdrop-blur-sm border border-green-900/20 p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-2">Rejected</h3>
           <p className="text-3xl font-bold text-red-500">
             {organizations.filter((o) => o.status === "rejected").length}
@@ -265,47 +265,47 @@ export default function AdminOrganizationsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-800">
+              <thead className="bg-gray-800/90">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                     Organization
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                     Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                     Date Joined
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                     Specialties
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-gray-900  border border-green-900/20 divide-y divide-gray-800">
                 {filteredOrganizations.map((org) => (
                   <tr
                     key={org.id}
                     id={`org-${org.id}`}
-                    className="hover:bg-gray-50 transition-colors"
+                    className="hover:bg-gray-900/50 transition-colors"
                   >
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-gray-100">
                         {org.name}
                       </div>
-                      <div className="text-sm text-gray-500">{org.email}</div>
+                      <div className="text-sm text-gray-400">{org.email}</div>
                       <div className="text-xs text-gray-500 mt-1">
                         {org.description}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm text-gray-500">
                         {org.contactPerson}
                       </div>
                     </td>

@@ -103,7 +103,7 @@ export default function AdminUsersPage() {
         <h1 className="text-2xl font-bold">Manage Users</h1>
         <Link
           href="/admin/dashboard"
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white px-4 py-2 rounded"
         >
           Back to Dashboard
         </Link>
@@ -157,23 +157,23 @@ export default function AdminUsersPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded shadow">
+        <div className="bg-gray-900/60 backdrop-blur-sm border border-green-900/20 p-4 rounded shadow">
           <h3 className="text-lg font-semibold mb-2">Total Users</h3>
           <p className="text-3xl font-bold">{users.length}</p>
         </div>
-        <div className="bg-white p-4 rounded shadow">
+        <div className="bg-gray-900/60 backdrop-blur-sm border border-green-900/20 p-4 rounded shadow">
           <h3 className="text-lg font-semibold mb-2">Individual Users</h3>
           <p className="text-3xl font-bold">
             {users.filter((u) => u.role === "user").length}
           </p>
         </div>
-        <div className="bg-white p-4 rounded shadow">
+        <div className="bg-gray-900/60 backdrop-blur-sm border border-green-900/20 p-4 rounded shadow">
           <h3 className="text-lg font-semibold mb-2">Organizations</h3>
           <p className="text-3xl font-bold">
             {users.filter((u) => u.role === "organization").length}
           </p>
         </div>
-        <div className="bg-white p-4 rounded shadow">
+        <div className="bg-gray-900/60 backdrop-blur-sm border border-green-900/20 p-4 rounded shadow">
           <h3 className="text-lg font-semibold mb-2">Admins</h3>
           <p className="text-3xl font-bold">
             {users.filter((u) => u.role === "admin").length}
@@ -182,7 +182,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-gray-900/60 backdrop-blur-sm border border-green-900/20 rounded-lg shadow overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
@@ -194,34 +194,34 @@ export default function AdminUsersPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-800">
+              <thead className="bg-gray-800/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                     Role
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                     Date Joined
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-800">
                 {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr key={user.id} className="hover:bg-gray-500/50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-gray-200">
                         {user.name}
                       </div>
                     </td>
