@@ -41,11 +41,11 @@ export default function Home() {
 
       {/* Header/Navigation */}
       <header className="sticky top-0 z-100 backdrop-blur-md border-b border-green-900/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <span className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-600 text-transparent bg-clip-text">
+                <span className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-600 text-transparent bg-clip-text">
                   Ushuari
                 </span>
               </div>
@@ -76,9 +76,9 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 md:py-32 z-1">
+      <section className="relative overflow-hidden py-18 md:py-24 z-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-16 mt-52">
+          <div className="text-center mb-16 mt-48">
             <h1 className="text-4xl md:text-7xl font-bold mb-6 text-white">
               <span className="bg-gradient-to-r from-green-400 to-emerald-600 text-transparent bg-clip-text">
                 AI-Powered
@@ -107,7 +107,7 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 relative z-1">
+      <section id="how-it-works" className="py-32 mt-18 relative z-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-12 text-white">How It Works</h2>
 
