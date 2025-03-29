@@ -4,48 +4,17 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
-import { User } from "@/types";
+import axios from "axios";
 
-// Mock data for users
-const MOCK_USERS = [
-  {
-    id: "user-1",
-    name: "Alex Williams",
-    email: "alex@example.com",
-    role: "user",
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "user-2",
-    name: "Sarah Johnson",
-    email: "sarah@example.com",
-    role: "user",
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "org-1",
-    name: "Legal Experts LLC",
-    email: "contact@legalexperts.com",
-    role: "organization",
-    organizationStatus: "approved",
-    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "org-2",
-    name: "Tenant Rights Group",
-    email: "help@tenantrightsgroup.org",
-    role: "organization",
-    organizationStatus: "pending",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "admin-1",
-    name: "Admin User",
-    email: "admin@ushuari.com",
-    role: "admin",
-    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "organization" | "user";
+  createdAt: string;
+  organizationId?: string;
+  organizationStatus?: "pending" | "approved" | "rejected";
+}
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -53,26 +22,56 @@ export default function AdminUsersPage() {
   const [filter, setFilter] = useState("all"); // all, users, organizations, admins
 
   useEffect(() => {
-    // In a real app, this would be a fetch to your API
-    const fetchUsers = () => {
-      setIsLoading(true);
-      // Simulate API request
-      setTimeout(() => {
-        setUsers(MOCK_USERS);
-        setIsLoading(false);
-      }, 500);
-    };
-
     fetchUsers();
-  }, []);
+  }, [filter]);
 
-  const filteredUsers = users.filter((user) => {
-    if (filter === "all") return true;
-    if (filter === "users" && user.role === "user") return true;
-    if (filter === "organizations" && user.role === "organization") return true;
-    if (filter === "admins" && user.role === "admin") return true;
-    return false;
-  });
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      // Construct query URL based on filter
+      let apiUrl = "/api/admin/users";
+      if (filter !== "all") {
+        apiUrl += `?role=${filter}`;
+      }
+
+      const response = await axios.get(apiUrl);
+      if (response.data.success) {
+        setUsers(response.data.users);
+      } else {
+        console.error("API returned error:", response.data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast.error("Failed to load users. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateOrganizationStatus = async (
+    orgId: string,
+    newStatus: "approved" | "rejected"
+  ) => {
+    try {
+      const response = await axios.post(
+        `/api/admin/organizations/${orgId}/approve`,
+        {
+          status: newStatus,
+        }
+      );
+
+      if (response.data.success) {
+        // Refresh the user list to get updated data
+        fetchUsers();
+        toast.success(`Organization ${newStatus} successfully`);
+      } else {
+        toast.error(response.data.message || "Failed to update organization");
+      }
+    } catch (error) {
+      console.error("Error updating organization:", error);
+      toast.error("An error occurred while updating the organization");
+    }
+  };
 
   const getRoleClass = (role: string) => {
     switch (role) {
@@ -86,7 +85,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  const getStatusClass = (status: string) => {
+  const getStatusClass = (status?: string) => {
     switch (status) {
       case "approved":
         return "bg-green-100 text-green-800";
@@ -125,31 +124,31 @@ export default function AdminUsersPage() {
           </button>
           <button
             className={`px-4 py-2 rounded ${
-              filter === "users"
+              filter === "user"
                 ? "bg-gray-800 text-white"
                 : "bg-gray-200 text-gray-800"
             }`}
-            onClick={() => setFilter("users")}
+            onClick={() => setFilter("user")}
           >
             Individual Users
           </button>
           <button
             className={`px-4 py-2 rounded ${
-              filter === "organizations"
+              filter === "organization"
                 ? "bg-gray-800 text-white"
                 : "bg-gray-200 text-gray-800"
             }`}
-            onClick={() => setFilter("organizations")}
+            onClick={() => setFilter("organization")}
           >
             Organizations
           </button>
           <button
             className={`px-4 py-2 rounded ${
-              filter === "admins"
+              filter === "admin"
                 ? "bg-gray-800 text-white"
                 : "bg-gray-200 text-gray-800"
             }`}
-            onClick={() => setFilter("admins")}
+            onClick={() => setFilter("admin")}
           >
             Admins
           </button>
@@ -189,7 +188,7 @@ export default function AdminUsersPage() {
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
             <p className="mt-2">Loading users...</p>
           </div>
-        ) : filteredUsers.length === 0 ? (
+        ) : users.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             No users found with the selected filter.
           </div>
@@ -219,7 +218,7 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
+                {users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
@@ -242,7 +241,7 @@ export default function AdminUsersPage() {
                       {user.role === "organization" && (
                         <span
                           className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
-                            user.organizationStatus || "pending"
+                            user.organizationStatus
                           )}`}
                         >
                           {user.organizationStatus || "pending"}
@@ -250,55 +249,50 @@ export default function AdminUsersPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(user.createdAt).toLocaleDateString()}
+                      {user.createdAt
+                        ? new Date(user.createdAt).toLocaleDateString()
+                        : "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <Link
-                          href={`/admin/users/${user.id}`}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          View
-                        </Link>
+                        {user.role === "organization" && user.organizationId ? (
+                          <Link
+                            href={`/admin/organizations/${user.organizationId}`}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            View Organization
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/admin/users/${user.id}`}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            View User
+                          </Link>
+                        )}
+
                         {user.role === "organization" &&
-                          user.organizationStatus === "pending" && (
+                          user.organizationStatus === "pending" &&
+                          user.organizationId && (
                             <>
                               <button
-                                onClick={() => {
-                                  setUsers(
-                                    users.map((u) =>
-                                      u.id === user.id
-                                        ? {
-                                            ...u,
-                                            organizationStatus: "approved",
-                                          }
-                                        : u
-                                    )
-                                  );
-                                  toast.success(
-                                    `${user.name} has been approved`
-                                  );
-                                }}
+                                onClick={() =>
+                                  updateOrganizationStatus(
+                                    user.organizationId as string,
+                                    "approved"
+                                  )
+                                }
                                 className="text-green-600 hover:text-green-900"
                               >
                                 Approve
                               </button>
                               <button
-                                onClick={() => {
-                                  setUsers(
-                                    users.map((u) =>
-                                      u.id === user.id
-                                        ? {
-                                            ...u,
-                                            organizationStatus: "rejected",
-                                          }
-                                        : u
-                                    )
-                                  );
-                                  toast.success(
-                                    `${user.name} has been rejected`
-                                  );
-                                }}
+                                onClick={() =>
+                                  updateOrganizationStatus(
+                                    user.organizationId as string,
+                                    "rejected"
+                                  )
+                                }
                                 className="text-red-600 hover:text-red-900"
                               >
                                 Reject
