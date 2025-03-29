@@ -36,8 +36,8 @@ export default function OrganizationRegisterPage() {
     setIsLoading(true);
 
     try {
-      // For simplicity, we're keeping the same register function but with 'organization' role
-      // In a real app, you might want to send additional organization fields
+      // For organization registration, we use 'organization' role
+      // In a real app, we would also send the organization details
       const success = await register(name, email, password, "organization");
 
       if (success) {
