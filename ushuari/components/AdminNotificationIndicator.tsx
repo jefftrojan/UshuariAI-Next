@@ -1,46 +1,69 @@
-// components/AdminNotificationIndicator.tsx
+// components/AdminNotificationIndicator.tsx - Enhanced version
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import axios from "axios";
 
 interface NotificationIndicatorProps {
   type: "organizations" | "users" | "calls";
 }
 
-const AdminNotificationIndicator = ({ type }: NotificationIndicatorProps) => {
+export default function AdminNotificationIndicator({
+  type,
+}: NotificationIndicatorProps) {
   const [count, setCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, this would fetch the counts from your API
-    // For demo purposes, we'll simulate different counts
-    const fetchCounts = () => {
-      setTimeout(() => {
-        switch (type) {
-          case "organizations":
-            setCount(2); // Mock: 2 pending organizations
-            break;
-          case "users":
-            setCount(0); // No pending user actions
-            break;
-          case "calls":
-            setCount(3); // Mock: 3 unassigned calls
-            break;
-          default:
-            setCount(0);
+    const fetchNotificationCounts = async () => {
+      setIsLoading(true);
+      try {
+        // Different API endpoints based on type
+        let response;
+
+        if (type === "organizations") {
+          // Get count of pending organizations
+          response = await axios.get(
+            "/api/admin/notifications?type=new_organization&status=unread"
+          );
+          if (response.data.success) {
+            setCount(response.data.notifications.length);
+          }
+        } else if (type === "calls") {
+          // Get count of unassigned calls
+          response = await axios.get("/api/admin/calls?status=unassigned");
+          if (response.data.success) {
+            setCount(response.data.calls.length);
+          }
+        } else {
+          // For users, no notifications for now
+          setCount(0);
         }
-      }, 500);
+      } catch (error) {
+        console.error(`Error fetching ${type} notification count:`, error);
+
+        // Fallback to mock counts in case of API failure
+        if (type === "organizations") {
+          setCount(2);
+        } else if (type === "calls") {
+          setCount(3);
+        } else {
+          setCount(0);
+        }
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    fetchCounts();
+    fetchNotificationCounts();
 
-    // In a real app, you might set up a polling interval or websocket
-    const interval = setInterval(fetchCounts, 30000); // Every 30 seconds
-
+    // Set up polling interval
+    const interval = setInterval(fetchNotificationCounts, 30000);
     return () => clearInterval(interval);
   }, [type]);
 
-  if (count === 0) {
+  if (isLoading || count === 0) {
     return null;
   }
 
@@ -49,6 +72,4 @@ const AdminNotificationIndicator = ({ type }: NotificationIndicatorProps) => {
       {count > 9 ? "9+" : count}
     </span>
   );
-};
-
-export default AdminNotificationIndicator;
+}

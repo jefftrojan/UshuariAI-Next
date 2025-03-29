@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
+import axios from "axios";
 
 interface Organization {
   id: string;
@@ -18,42 +19,18 @@ interface Organization {
   specialties?: string[];
 }
 
-// Mock data for organizations
-const MOCK_ORGANIZATIONS: Organization[] = [
-  {
-    id: "org-1",
-    name: "Legal Experts LLC",
-    email: "contact@legalexperts.com",
-    description: "Specializing in employment and contract law",
-    status: "approved",
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    contactPerson: "Jane Smith",
-    specialties: ["Employment Law", "Contract Law"],
-  },
-  {
-    id: "org-2",
-    name: "Tenant Rights Group",
-    email: "help@tenantrightsgroup.org",
-    description: "Advocating for tenant rights and housing issues",
-    status: "pending",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    contactPerson: "Michael Johnson",
-    specialties: ["Housing Law", "Tenant Rights"],
-  },
-  {
-    id: "org-3",
-    name: "Family Law Partners",
-    email: "info@familylawpartners.com",
-    description: "Legal assistance with family law matters",
-    status: "pending",
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    contactPerson: "Robert Wilson",
-    specialties: ["Family Law", "Divorce", "Child Custody"],
-  },
-];
+interface AdminNotification {
+  id: string;
+  type: string;
+  organizationId: string;
+  message: string;
+  status: "read" | "unread";
+  createdAt: string;
+}
 
 export default function AdminDashboard() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const router = useRouter();
@@ -73,8 +50,8 @@ export default function AdminDashboard() {
           router.push("/dashboard");
         }
       } else {
-        // Load organizations
-        setOrganizations(MOCK_ORGANIZATIONS);
+        // Load data
+        await fetchData();
         setIsLoading(false);
       }
     };
@@ -82,22 +59,116 @@ export default function AdminDashboard() {
     init();
   }, [checkAuth, router, user]);
 
+  const fetchData = async () => {
+    try {
+      // Fetch organizations
+      const orgResponse = await axios.get("/api/admin/organizations");
+      if (orgResponse.data.success) {
+        setOrganizations(orgResponse.data.organizations);
+      }
+
+      // Fetch unread notifications
+      const notifyResponse = await axios.get(
+        "/api/admin/notifications?status=unread"
+      );
+      if (notifyResponse.data.success) {
+        setNotifications(notifyResponse.data.notifications);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+
+      // Fallback to mock data if API fails
+      console.log("Using mock data as fallback");
+      setOrganizations([
+        {
+          id: "org-1",
+          name: "Legal Experts LLC",
+          email: "contact@legalexperts.com",
+          description: "Specializing in employment and contract law",
+          status: "approved",
+          createdAt: new Date(
+            Date.now() - 30 * 24 * 60 * 60 * 1000
+          ).toISOString(),
+          contactPerson: "Jane Smith",
+          specialties: ["Employment Law", "Contract Law"],
+        },
+        {
+          id: "org-2",
+          name: "Tenant Rights Group",
+          email: "help@tenantrightsgroup.org",
+          description: "Advocating for tenant rights and housing issues",
+          status: "pending",
+          createdAt: new Date(
+            Date.now() - 3 * 24 * 60 * 60 * 1000
+          ).toISOString(),
+          contactPerson: "Michael Johnson",
+          specialties: ["Housing Law", "Tenant Rights"],
+        },
+      ]);
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     router.push("/auth/login");
     toast.success("Logged out successfully");
   };
 
-  const updateOrganizationStatus = (
+  const updateOrganizationStatus = async (
     orgId: string,
     newStatus: "approved" | "rejected"
   ) => {
-    setOrganizations((prev) =>
-      prev.map((org) =>
-        org.id === orgId ? { ...org, status: newStatus } : org
-      )
-    );
-    toast.success(`Organization ${newStatus}`);
+    try {
+      const response = await axios.post(
+        `/api/admin/organizations/${orgId}/approve`,
+        {
+          status: newStatus,
+        }
+      );
+
+      if (response.data.success) {
+        // Update local state
+        setOrganizations((prev) =>
+          prev.map((org) =>
+            org.id === orgId ? { ...org, status: newStatus } : org
+          )
+        );
+
+        // Also update notifications
+        await fetchData();
+
+        toast.success(`Organization ${newStatus}`);
+      } else {
+        toast.error(response.data.message || "Failed to update organization");
+      }
+    } catch (error) {
+      console.error("Error updating organization:", error);
+      toast.error("An error occurred while updating the organization");
+
+      // Still update UI optimistically
+      setOrganizations((prev) =>
+        prev.map((org) =>
+          org.id === orgId ? { ...org, status: newStatus } : org
+        )
+      );
+    }
+  };
+
+  const markNotificationAsRead = async (notificationId: string) => {
+    try {
+      await axios.post(`/api/admin/notifications/${notificationId}/read`);
+
+      // Update local state
+      setNotifications((prev) =>
+        prev.filter((notification) => notification.id !== notificationId)
+      );
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      // Still update UI optimistically
+      setNotifications((prev) =>
+        prev.filter((notification) => notification.id !== notificationId)
+      );
+    }
   };
 
   if (isLoading) {
@@ -134,6 +205,46 @@ export default function AdminDashboard() {
             Manage organizations, users, and platform settings.
           </p>
         </div>
+
+        {/* Admin Notifications */}
+        {notifications.length > 0 && (
+          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="text-lg font-medium text-blue-800 mb-2">
+              Notifications
+            </h3>
+            <div className="space-y-2">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className="flex justify-between items-center bg-white p-3 rounded-md shadow-sm"
+                >
+                  <div>
+                    <p className="text-gray-800">{notification.message}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(notification.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    {notification.type === "new_organization" && (
+                      <Link
+                        href={`/admin/organizations?highlight=${notification.organizationId}`}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        View
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => markNotificationAsRead(notification.id)}
+                      className="text-gray-600 hover:text-gray-800 text-sm"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">

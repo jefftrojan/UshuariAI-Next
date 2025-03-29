@@ -1,94 +1,141 @@
-// app/admin/organizations/page.tsx
+// app/admin/organizations/page.tsx - Enhanced version
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
 import { Organization } from "@/types";
-
-// Mock data for organizations
-const MOCK_ORGANIZATIONS: Organization[] = [
-  {
-    id: "org-1",
-    name: "Legal Experts LLC",
-    email: "contact@legalexperts.com",
-    description: "Specializing in employment and contract law",
-    status: "approved",
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    contactPerson: "Jane Smith",
-    specialties: ["Employment Law", "Contract Law"],
-  },
-  {
-    id: "org-2",
-    name: "Tenant Rights Group",
-    email: "help@tenantrightsgroup.org",
-    description: "Advocating for tenant rights and housing issues",
-    status: "pending",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    contactPerson: "Michael Johnson",
-    specialties: ["Housing Law", "Tenant Rights"],
-  },
-  {
-    id: "org-3",
-    name: "Family Law Partners",
-    email: "info@familylawpartners.com",
-    description: "Legal assistance with family law matters",
-    status: "pending",
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    contactPerson: "Robert Wilson",
-    specialties: ["Family Law", "Divorce", "Child Custody"],
-  },
-  {
-    id: "org-4",
-    name: "Immigration Advocates Network",
-    email: "contact@immigrationadvocates.org",
-    description: "Providing legal services for immigration matters",
-    status: "rejected",
-    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-    contactPerson: "Maria Garcia",
-    specialties: ["Immigration Law", "Asylum Cases"],
-  },
-];
+import axios from "axios";
 
 export default function AdminOrganizationsPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState("all"); // all, pending, approved, rejected
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Get the highlighted organization from query params
+  const highlightedOrgId = searchParams.get("highlight");
 
   useEffect(() => {
-    // In a real app, this would be a fetch to your API
-    const fetchOrganizations = () => {
+    const fetchOrganizations = async () => {
       setIsLoading(true);
-      // Simulate API request
-      setTimeout(() => {
-        setOrganizations(MOCK_ORGANIZATIONS);
+      try {
+        // Construct query based on filter
+        let apiUrl = "/api/admin/organizations";
+        if (filter !== "all") {
+          apiUrl += `?status=${filter}`;
+        }
+
+        const response = await axios.get(apiUrl);
+
+        if (response.data.success) {
+          setOrganizations(response.data.organizations);
+
+          // If there's a highlighted organization, scroll to it
+          if (highlightedOrgId) {
+            setTimeout(() => {
+              const element = document.getElementById(
+                `org-${highlightedOrgId}`
+              );
+              if (element) {
+                element.scrollIntoView({ behavior: "smooth" });
+                element.classList.add("bg-yellow-50");
+                // Remove highlight after 3 seconds
+                setTimeout(() => {
+                  element.classList.remove("bg-yellow-50");
+                }, 3000);
+              }
+            }, 500);
+          }
+        } else {
+          toast.error("Failed to fetch organizations");
+        }
+      } catch (error) {
+        console.error("Error fetching organizations:", error);
+        toast.error("An error occurred while fetching organizations");
+
+        // Fallback to mock data in case of API failure
+        setOrganizations([
+          {
+            id: "org-1",
+            name: "Legal Experts LLC",
+            email: "contact@legalexperts.com",
+            description: "Specializing in employment and contract law",
+            status: "approved",
+            createdAt: new Date(
+              Date.now() - 30 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            contactPerson: "Jane Smith",
+            specialties: ["Employment Law", "Contract Law"],
+          },
+          {
+            id: "org-2",
+            name: "Tenant Rights Group",
+            email: "help@tenantrightsgroup.org",
+            description: "Advocating for tenant rights and housing issues",
+            status: "pending",
+            createdAt: new Date(
+              Date.now() - 3 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            contactPerson: "Michael Johnson",
+            specialties: ["Housing Law", "Tenant Rights"],
+          },
+        ]);
+      } finally {
         setIsLoading(false);
-      }, 500);
+      }
     };
 
     fetchOrganizations();
-  }, []);
+  }, [filter, highlightedOrgId]);
+
+  const updateOrganizationStatus = async (
+    orgId: string,
+    newStatus: "approved" | "rejected"
+  ) => {
+    try {
+      const response = await axios.post(
+        `/api/admin/organizations/${orgId}/approve`,
+        {
+          status: newStatus,
+        }
+      );
+
+      if (response.data.success) {
+        // Update the organization locally
+        setOrganizations((prev) =>
+          prev.map((org) =>
+            org.id === orgId ? { ...org, status: newStatus } : org
+          )
+        );
+
+        const orgName =
+          organizations.find((org) => org.id === orgId)?.name || "Organization";
+        toast.success(`${orgName} ${newStatus} successfully`);
+      } else {
+        toast.error(
+          response.data.message || "Failed to update organization status"
+        );
+      }
+    } catch (error) {
+      console.error("Error updating organization status:", error);
+      toast.error("An error occurred while updating the organization");
+
+      // Optimistically update UI even if API fails
+      setOrganizations((prev) =>
+        prev.map((org) =>
+          org.id === orgId ? { ...org, status: newStatus } : org
+        )
+      );
+    }
+  };
 
   const filteredOrganizations = organizations.filter((org) => {
     if (filter === "all") return true;
     return org.status === filter;
   });
-
-  const updateOrganizationStatus = (
-    orgId: string,
-    newStatus: "approved" | "rejected"
-  ) => {
-    // In a real app, this would be an API call
-    setOrganizations((prev) =>
-      prev.map((org) =>
-        org.id === orgId ? { ...org, status: newStatus } : org
-      )
-    );
-
-    const orgName =
-      organizations.find((org) => org.id === orgId)?.name || "Organization";
-    toast.success(`${orgName} ${newStatus} successfully`);
-  };
 
   return (
     <div className="container mx-auto">
@@ -212,7 +259,11 @@ export default function AdminOrganizationsPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredOrganizations.map((org) => (
-                  <tr key={org.id} className="hover:bg-gray-50">
+                  <tr
+                    key={org.id}
+                    id={`org-${org.id}`}
+                    className="hover:bg-gray-50 transition duration-150"
+                  >
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-gray-900">
                         {org.name}

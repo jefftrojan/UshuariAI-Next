@@ -1,4 +1,4 @@
-// app/admin/organizations/[id]/page.tsx
+// app/admin/organizations/[id]/page.tsx - Enhanced version
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,42 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import { Organization } from "@/types";
-
-// Mock data for detailed organization view
-const MOCK_ORGANIZATIONS: Record<string, Organization> = {
-  "org-1": {
-    id: "org-1",
-    name: "Legal Experts LLC",
-    email: "contact@legalexperts.com",
-    description:
-      "Specializing in employment and contract law with over 10 years of experience helping employees and businesses navigate complex legal situations. Our team of experts provides personalized legal assistance for a variety of employment and contract issues.",
-    status: "approved",
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    contactPerson: "Jane Smith",
-    specialties: [
-      "Employment Law",
-      "Contract Law",
-      "Workplace Disputes",
-      "Severance Agreements",
-    ],
-  },
-  "org-2": {
-    id: "org-2",
-    name: "Tenant Rights Group",
-    email: "help@tenantrightsgroup.org",
-    description:
-      "Advocating for tenant rights and housing issues. We provide legal assistance to tenants facing eviction, unfair rental practices, and other housing challenges. Our mission is to ensure fair housing for all.",
-    status: "pending",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    contactPerson: "Michael Johnson",
-    specialties: [
-      "Housing Law",
-      "Tenant Rights",
-      "Eviction Defense",
-      "Fair Housing",
-    ],
-  },
-};
+import axios from "axios";
 
 export default function OrganizationDetailPage({
   params,
@@ -54,31 +19,81 @@ export default function OrganizationDetailPage({
   const router = useRouter();
 
   useEffect(() => {
-    // In a real app, this would be a fetch to your API
-    const fetchOrganization = () => {
+    const fetchOrganization = async () => {
       setIsLoading(true);
-      // Simulate API request
-      setTimeout(() => {
-        const org = MOCK_ORGANIZATIONS[params.id];
-        if (org) {
-          setOrganization(org);
+      try {
+        const response = await axios.get(
+          `/api/admin/organizations/${params.id}`
+        );
+
+        if (response.data.success) {
+          setOrganization(response.data.organization);
+        } else {
+          toast.error(
+            response.data.message || "Failed to fetch organization details"
+          );
         }
+      } catch (error) {
+        console.error("Error fetching organization:", error);
+        toast.error("An error occurred while fetching organization details");
+      } finally {
         setIsLoading(false);
-      }, 500);
+      }
     };
 
     fetchOrganization();
   }, [params.id]);
 
-  const updateOrganizationStatus = (newStatus: "approved" | "rejected") => {
-    // In a real app, this would be an API call
+  const updateOrganizationStatus = async (
+    newStatus: "approved" | "rejected"
+  ) => {
     if (!organization) return;
 
-    setOrganization({ ...organization, status: newStatus });
-    toast.success(`${organization.name} ${newStatus} successfully`);
+    try {
+      const response = await axios.post(
+        `/api/admin/organizations/${params.id}/approve`,
+        {
+          status: newStatus,
+          notes: notes.trim() || undefined,
+        }
+      );
 
-    // In a real app, you would also want to save the admin notes
-    console.log("Admin notes:", notes);
+      if (response.data.success) {
+        setOrganization({ ...organization, status: newStatus });
+        toast.success(`${organization.name} ${newStatus} successfully`);
+
+        // Clear notes after successful update
+        setNotes("");
+
+        // Create notification for the organization
+        try {
+          await axios.post("/api/notifications/organization-status", {
+            organizationId: params.id,
+            status: newStatus,
+            message:
+              newStatus === "approved"
+                ? "Your organization has been approved! You can now receive and handle legal assistance calls."
+                : "Your organization registration has been rejected. Please contact support for more information.",
+          });
+        } catch (notifyError) {
+          console.error(
+            "Error sending organization notification:",
+            notifyError
+          );
+          // Non-critical error, don't show to the user
+        }
+      } else {
+        toast.error(
+          response.data.message || "Failed to update organization status"
+        );
+      }
+    } catch (error) {
+      console.error("Error updating organization status:", error);
+      toast.error("An error occurred while updating the organization");
+
+      // Still update UI optimistically
+      setOrganization({ ...organization, status: newStatus });
+    }
   };
 
   // If organization not found
@@ -246,6 +261,22 @@ export default function OrganizationDetailPage({
             {organization.status !== "pending" && (
               <div className="p-6 bg-gray-50 border-t border-gray-200">
                 <h3 className="text-lg font-semibold mb-4">Change Status</h3>
+                <div className="mb-4">
+                  <label
+                    htmlFor="notes"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Admin Notes (optional)
+                  </label>
+                  <textarea
+                    id="notes"
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Add notes about this status change..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  ></textarea>
+                </div>
                 <div className="flex space-x-4">
                   {organization.status === "rejected" && (
                     <button
