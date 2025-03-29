@@ -1,4 +1,4 @@
-// app/organization/dashboard/page.tsx
+// app/organization/dashboard/page.tsx - Fixed version
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
+import axios from "axios";
+import OrganizationApprovalNotification from "@/components/OrganizationApprovalNotification";
 
 interface Call {
   id: string;
@@ -41,7 +43,7 @@ const MOCK_ORG_CALLS: Call[] = [
     priority: "medium",
   },
   {
-    id: "2", // This is also in the user dashboard to simulate the connection
+    id: "2",
     title: "Landlord Dispute",
     description: "My landlord is refusing to fix a leaking pipe",
     status: "in-progress",
@@ -57,6 +59,7 @@ export default function OrganizationDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [organizationStatus, setOrganizationStatus] =
     useState<string>("pending");
+  const [showStatusBanner, setShowStatusBanner] = useState(true);
 
   const router = useRouter();
   const { user, isAuthenticated, checkAuth, logout } = useAuthStore();
@@ -64,26 +67,57 @@ export default function OrganizationDashboard() {
   // Check authentication on load
   useEffect(() => {
     const init = async () => {
+      setIsLoading(true);
       const isAuth = await checkAuth();
+
       if (!isAuth) {
         router.push("/auth/login");
-      } else if (user?.role !== "organization") {
+        return;
+      }
+
+      if (user?.role !== "organization") {
         // Redirect to appropriate dashboard based on role
         if (user?.role === "admin") {
           router.push("/admin/dashboard");
         } else if (user?.role === "user") {
           router.push("/dashboard");
         }
-      } else {
-        // Set organization status
+        return;
+      }
+
+      // Get the latest organization status directly from the database
+      try {
+        const response = await axios.get(
+          `/api/organizations/status?userId=${user.id}`
+        );
+        if (response.data.success) {
+          setOrganizationStatus(response.data.status);
+
+          // Only load calls if organization is approved
+          if (response.data.status === "approved") {
+            setCalls(MOCK_ORG_CALLS);
+          }
+        } else {
+          // Fallback to user object if API fails
+          if (user.organizationStatus) {
+            setOrganizationStatus(user.organizationStatus);
+
+            if (user.organizationStatus === "approved") {
+              setCalls(MOCK_ORG_CALLS);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching organization status:", error);
+        // Fallback to user object
         if (user.organizationStatus) {
           setOrganizationStatus(user.organizationStatus);
-        }
 
-        // Only load calls if organization is approved
-        if (user.organizationStatus === "approved") {
-          setCalls(MOCK_ORG_CALLS);
+          if (user.organizationStatus === "approved") {
+            setCalls(MOCK_ORG_CALLS);
+          }
         }
+      } finally {
         setIsLoading(false);
       }
     };
@@ -160,9 +194,65 @@ export default function OrganizationDashboard() {
               administrators. You will receive full access to the platform once
               your account is approved.
             </p>
-            <p className="text-gray-500 text-sm">
-              If you have any questions, please contact our support team.
+            <div className="mt-6 border-t border-gray-200 pt-6">
+              <h3 className="text-lg font-medium mb-3">What happens next?</h3>
+              <div className="grid md:grid-cols-3 gap-4 text-left">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center mb-2">
+                    <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center mr-2 font-medium">
+                      1
+                    </span>
+                    <h4 className="font-medium">Admin Review</h4>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Our admin team is reviewing your organization details
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center mb-2">
+                    <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center mr-2 font-medium">
+                      2
+                    </span>
+                    <h4 className="font-medium">Approval Decision</h4>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    We'll make a decision within 1-2 business days
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center mb-2">
+                    <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center mr-2 font-medium">
+                      3
+                    </span>
+                    <h4 className="font-medium">Get Started</h4>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Upon approval, you'll get full access to calls and features
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="text-gray-500 text-sm mt-6">
+              If you have any questions, please contact our support team at{" "}
+              <a
+                href="mailto:support@ushuari.com"
+                className="text-blue-600 hover:underline"
+              >
+                support@ushuari.com
+              </a>
             </p>
+
+            {/* Add refresh button */}
+            <button
+              onClick={async () => {
+                setIsLoading(true);
+                await checkAuth();
+                window.location.reload();
+              }}
+              className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Check Approval Status
+            </button>
           </div>
         </main>
       </div>
@@ -214,14 +304,68 @@ export default function OrganizationDashboard() {
               rejected. This may be due to incomplete information or not meeting
               our eligibility criteria.
             </p>
-            <p className="text-gray-500 text-sm mb-6">
-              For more information, please contact our support team.
+            <div className="mt-6 border-t border-gray-200 pt-6">
+              <h3 className="text-lg font-medium mb-3">What you can do next</h3>
+              <div className="grid md:grid-cols-2 gap-4 text-left max-w-2xl mx-auto">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Contact Support</h4>
+                  <p className="text-sm text-gray-600">
+                    Reach out to our support team for more information about why
+                    your application was rejected and how you can improve it.
+                  </p>
+                  <a
+                    href="mailto:support@ushuari.com"
+                    className="text-blue-600 hover:underline text-sm inline-block mt-2"
+                  >
+                    Email support@ushuari.com
+                  </a>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Reapply</h4>
+                  <p className="text-sm text-gray-600">
+                    You may be able to reapply after addressing the issues with
+                    your application. Please wait at least 30 days before
+                    reapplying.
+                  </p>
+                  <button
+                    className="text-blue-600 hover:underline text-sm inline-block mt-2"
+                    onClick={() =>
+                      toast.success(
+                        "Reapplication will be available after 30 days."
+                      )
+                    }
+                  >
+                    Reapply after 30 days
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p className="text-gray-500 text-sm mt-6">
+              For more information, please contact our support team at{" "}
+              <a
+                href="mailto:support@ushuari.com"
+                className="text-blue-600 hover:underline"
+              >
+                support@ushuari.com
+              </a>
             </p>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+              className="mt-8 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
             >
               Back to Home
+            </button>
+
+            {/* Add refresh button */}
+            <button
+              onClick={async () => {
+                setIsLoading(true);
+                await checkAuth();
+                window.location.reload();
+              }}
+              className="mt-6 ml-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Check Status Again
             </button>
           </div>
         </main>
@@ -229,12 +373,14 @@ export default function OrganizationDashboard() {
     );
   }
 
-  // Regular dashboard for approved organizations
+  // Organization is approved - show dashboard
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-800">Ushuari</h1>
+          <h1 className="text-2xl font-bold text-blue-800">
+            Ushuari Organization
+          </h1>
           <div className="flex items-center space-x-4">
             <span className="text-gray-700">{user?.name}</span>
             <button
@@ -250,16 +396,36 @@ export default function OrganizationDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Organization Dashboard
+            Welcome to Your Organization Dashboard
           </h2>
-          <p className="text-gray-600">
-            Manage and respond to legal assistance calls from users.
-          </p>
+          <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-green-500"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  ></path>
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-green-700">
+                  Your organization has been approved! You now have full access
+                  to manage cases.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-medium mb-4">Total Calls</h3>
+            <h3 className="text-lg font-medium mb-4">Total Cases</h3>
             <p className="text-3xl font-bold text-blue-600">{calls.length}</p>
           </div>
 
@@ -286,53 +452,33 @@ export default function OrganizationDashboard() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-medium">Assigned Calls</h2>
-          </div>
+          <h2 className="text-xl font-medium mb-4">Assigned Cases</h2>
 
           {calls.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              No calls have been assigned to your organization yet.
+              No cases assigned to your organization yet.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Title
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Case
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      User
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Client
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Priority
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -345,12 +491,16 @@ export default function OrganizationDashboard() {
                           {call.title}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {call.description.substring(0, 50)}...
+                          {call.description.substring(0, 50)}
+                          {call.description.length > 50 ? "..." : ""}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {call.userName}
+                        <div className="text-sm font-medium text-gray-900">
+                          {call.userName || "Unknown User"}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          ID: {call.userId}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -391,21 +541,23 @@ export default function OrganizationDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           <Link
-                            href={`/organization/calls/${call.id}`}
+                            href={`/organization/cases/${call.id}`}
                             className="text-blue-600 hover:text-blue-900"
                           >
                             View
                           </Link>
+
                           {call.status === "pending" && (
                             <button
                               onClick={() =>
                                 updateCallStatus(call.id, "in-progress")
                               }
-                              className="text-blue-600 hover:text-blue-900"
+                              className="text-indigo-600 hover:text-indigo-900"
                             >
-                              Accept
+                              Start
                             </button>
                           )}
+
                           {call.status === "in-progress" && (
                             <button
                               onClick={() =>
