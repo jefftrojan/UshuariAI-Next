@@ -1,9 +1,10 @@
-// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 
-// Define routes that don't require authentication
+const JWT_SECRET = process.env.JWT_SECRET || "ushuari-jwt-secret";
+
+// Public routes that don't require authentication
 const PUBLIC_ROUTES = [
   "/",
   "/auth/login",
@@ -13,10 +14,17 @@ const PUBLIC_ROUTES = [
   "/api/auth/me",
 ];
 
+// Role-based route prefixes
+const ROLE_ROUTES = {
+  admin: ["/admin", "/api/admin"],
+  organization: ["/organization", "/api/organization"],
+  user: ["/dashboard", "/api/dashboard"],
+};
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public routes
+  // Check if the route is public
   if (
     PUBLIC_ROUTES.some(
       (route) => pathname === route || pathname.startsWith(`${route}/`)
@@ -25,112 +33,59 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for token in cookies
+  // Get token from cookies
   const token = request.cookies.get("token")?.value;
 
-  // If no token, redirect to login
+  // If no token, redirect to login or return 401 for API routes
   if (!token) {
-    // For API routes, return 401
     if (pathname.startsWith("/api/")) {
       return NextResponse.json(
         { success: false, message: "Not authenticated" },
         { status: 401 }
       );
     }
-
-    // For page routes, redirect to login
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
   try {
     // Verify token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "fallback_secret"
-    ) as any;
-    const userRole = decoded.role;
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      id: string;
+      role: string;
+    };
+    const userRole = decoded.role as "admin" | "organization" | "user";
 
-    // Route protection based on role
-    if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
-      if (userRole !== "admin") {
-        // For API routes, return 403
-        if (pathname.startsWith("/api/")) {
-          return NextResponse.json(
-            { success: false, message: "Access denied" },
-            { status: 403 }
-          );
-        }
+    // Check role-based route access
+    for (const [role, prefixes] of Object.entries(ROLE_ROUTES)) {
+      if (prefixes.some((prefix) => pathname.startsWith(prefix))) {
+        if (role !== userRole) {
+          // For API routes, return 403
+          if (pathname.startsWith("/api/")) {
+            return NextResponse.json(
+              { success: false, message: "Access denied" },
+              { status: 403 }
+            );
+          }
 
-        // For page routes, redirect based on role
-        if (userRole === "organization") {
-          return NextResponse.redirect(
-            new URL("/organization/dashboard", request.url)
-          );
-        } else {
-          return NextResponse.redirect(new URL("/dashboard", request.url));
-        }
-      }
-    } else if (
-      pathname.startsWith("/organization") ||
-      pathname.startsWith("/api/organization")
-    ) {
-      if (userRole !== "organization") {
-        // For API routes, return 403
-        if (pathname.startsWith("/api/")) {
-          return NextResponse.json(
-            { success: false, message: "Access denied" },
-            { status: 403 }
-          );
-        }
-
-        // For page routes, redirect based on role
-        if (userRole === "admin") {
-          return NextResponse.redirect(
-            new URL("/admin/dashboard", request.url)
-          );
-        } else {
-          return NextResponse.redirect(new URL("/dashboard", request.url));
-        }
-      }
-    } else if (
-      pathname.startsWith("/dashboard") ||
-      pathname.startsWith("/api/dashboard")
-    ) {
-      if (userRole !== "user") {
-        // For API routes, return 403
-        if (pathname.startsWith("/api/")) {
-          return NextResponse.json(
-            { success: false, message: "Access denied" },
-            { status: 403 }
-          );
-        }
-
-        // For page routes, redirect based on role
-        if (userRole === "admin") {
-          return NextResponse.redirect(
-            new URL("/admin/dashboard", request.url)
-          );
-        } else if (userRole === "organization") {
-          return NextResponse.redirect(
-            new URL("/organization/dashboard", request.url)
-          );
+          // Redirect to appropriate dashboard
+          const redirectPath =
+            ROLE_ROUTES[userRole as keyof typeof ROLE_ROUTES][0];
+          return NextResponse.redirect(new URL(redirectPath, request.url));
         }
       }
     }
 
     return NextResponse.next();
   } catch (error) {
-    // If token is invalid, clear it and redirect to login
-
-    // For API routes, return 401
+    // Invalid token
     if (pathname.startsWith("/api/")) {
       return NextResponse.json(
-        { success: false, message: "Invalid or expired token" },
+        { success: false, message: "Invalid token" },
         { status: 401 }
       );
     }
 
-    // For page routes, redirect to login
+    // Delete token and redirect to login
     const response = NextResponse.redirect(new URL("/auth/login", request.url));
     response.cookies.delete("token");
     return response;

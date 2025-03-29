@@ -1,16 +1,15 @@
-// app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { compare } from "bcrypt";
 import jwt from "jsonwebtoken";
 import { ObjectId } from "mongodb";
 
+const JWT_SECRET = process.env.JWT_SECRET || "ushuari-jwt-secret";
+
 export async function POST(request: Request) {
   try {
-    // Parse the request body
     const { email, password } = await request.json();
 
-    // Input validation
     if (!email || !password) {
       return NextResponse.json(
         { success: false, message: "Email and password are required" },
@@ -19,11 +18,8 @@ export async function POST(request: Request) {
     }
 
     const db = await getDb();
-
-    // Find the user by email
     const user = await db.collection("users").findOne({ email });
 
-    // Check if user exists
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Invalid email or password" },
@@ -31,7 +27,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify password
     const isPasswordValid = await compare(password, user.password);
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -40,7 +35,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // If user is an organization, fetch organization data
+    // Get organization data if user is organization
     let organizationData = null;
     if (user.role === "organization" && user.organizationId) {
       organizationData = await db.collection("organizations").findOne({
@@ -48,33 +43,30 @@ export async function POST(request: Request) {
       });
     }
 
-    // Create a clean user object (without password) to return
+    // Create user object to return (without password)
     const userToReturn = {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
       role: user.role,
-      ...(user.role === "organization"
-        ? {
-            organizationId: user.organizationId,
-            organizationStatus: organizationData?.status || "pending",
-          }
-        : {}),
+      ...(user.role === "organization" && {
+        organizationId: user.organizationId,
+        organizationStatus: organizationData?.status || "pending",
+      }),
     };
 
-    // Generate JWT token
+    // Create JWT token
     const token = jwt.sign(
       { id: user._id.toString(), role: user.role },
-      process.env.JWT_SECRET || "fallback_secret",
+      JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    // Create the response
+    // Create response
     const response = NextResponse.json({
       success: true,
       message: "Login successful",
       user: userToReturn,
-      token,
     });
 
     // Set token as HTTP-only cookie

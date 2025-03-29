@@ -1,15 +1,14 @@
-// app/api/auth/register/route.ts
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { hash } from "bcrypt";
 import jwt from "jsonwebtoken";
 
+const JWT_SECRET = process.env.JWT_SECRET || "ushuari-jwt-secret";
+
 export async function POST(request: Request) {
   try {
-    // Parse the request body
     const { name, email, password, role = "user" } = await request.json();
 
-    // Input validation
     if (!name || !email || !password) {
       return NextResponse.json(
         { success: false, message: "Missing required fields" },
@@ -28,10 +27,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hash the password
+    // Hash password
     const hashedPassword = await hash(password, 10);
 
-    // Prepare user object
+    // Create user object
     const newUser = {
       name,
       email,
@@ -41,54 +40,46 @@ export async function POST(request: Request) {
       updatedAt: new Date(),
     };
 
-    // If registering as an organization, add organization info (pending approval)
+    // Add organization data if registering as organization
+    let organizationId;
     if (role === "organization") {
-      const organizationInfo = {
-        name: name, // Use the provided name as organization name initially
+      const orgResult = await db.collection("organizations").insertOne({
+        name,
         email,
-        status: "pending", // New organizations start as pending
+        status: "pending",
         createdAt: new Date(),
         contactPerson: name,
         specialties: [],
-      };
-
-      // Insert organization in the database
-      const orgResult = await db
-        .collection("organizations")
-        .insertOne(organizationInfo);
-
-      // Add organization reference to user
-      newUser.organizationId = orgResult.insertedId.toString();
+      });
+      organizationId = orgResult.insertedId.toString();
+      newUser.organizationId = organizationId;
     }
 
-    // Insert user in the database
+    // Insert user
     const result = await db.collection("users").insertOne(newUser);
 
-    // Create a clean user object (without password) to return
+    // Create user object to return (without password)
     const userToReturn = {
       id: result.insertedId.toString(),
       name,
       email,
       role,
-      ...(role === "organization"
-        ? { organizationId: newUser.organizationId }
-        : {}),
+      ...(role === "organization" && { organizationId }),
     };
 
-    // Generate JWT token
+    // Create JWT token
     const token = jwt.sign(
       { id: result.insertedId.toString(), role },
-      process.env.JWT_SECRET || "fallback_secret",
+      JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    // Create the response
+    // Create response
     const response = NextResponse.json(
       {
         success: true,
         message: "User registered successfully",
         user: userToReturn,
-        token,
       },
       { status: 201 }
     );

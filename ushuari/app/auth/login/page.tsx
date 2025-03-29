@@ -1,18 +1,18 @@
+// app/auth/login/page.tsx (simplified example)
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
-import Link from "next/link";
 import { toast } from "react-hot-toast";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
   const router = useRouter();
-  const { login } = useAuthStore();
+  const login = useAuthStore((state) => state.login);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +22,8 @@ export default function LoginPage() {
       const success = await login(email, password);
 
       if (success) {
-        const { user } = useAuthStore.getState();
+        // Get current user from store
+        const user = useAuthStore.getState().user;
         toast.success(`Welcome back, ${user?.name}!`);
 
         // Redirect based on role
@@ -38,7 +39,6 @@ export default function LoginPage() {
       }
     } catch (error) {
       toast.error("An error occurred during login");
-      console.error(error);
     } finally {
       setIsLoading(false);
     }
