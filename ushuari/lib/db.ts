@@ -30,10 +30,13 @@ export async function getDb() {
   return db;
 }
 
-// If you want to use mongoose models too
+// For mongoose models
 export async function connectMongoose() {
   if (mongoose.connection.readyState !== 1) {
     return await mongoose.connect(MONGODB_URI);
   }
   return mongoose.connection;
 }
+
+// Export mongoose for use with schemas
+export { mongoose };

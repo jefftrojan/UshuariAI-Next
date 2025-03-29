@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
 
 export default function AdminLayout({
@@ -10,18 +11,35 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { ensureCorrectRoleAccess } = useAuthStore();
+  const { user, checkAuth, logout } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
-    const checkAccess = async () => {
-      // Only allow users with "admin" role
-      const hasAccess = await ensureCorrectRoleAccess(router, ["admin"]);
+    const init = async () => {
+      const isAuth = await checkAuth();
+
+      if (!isAuth) {
+        router.push("/auth/login");
+        return;
+      }
+
+      // Redirect if not the right role
+      if (user?.role !== "admin") {
+        const path = useAuthStore.getState().getDashboardPath();
+        router.push(path);
+        return;
+      }
+
       setIsLoading(false);
     };
 
-    checkAccess();
-  }, [ensureCorrectRoleAccess, router]);
+    init();
+  }, [checkAuth, router, user]);
+
+  const handleLogout = () => {
+    logout(router);
+  };
 
   if (isLoading) {
     return (
@@ -120,9 +138,9 @@ export default function AdminLayout({
           </button>
 
           <div className="flex items-center">
-            <span className="text-gray-800 mr-2">{user.name}</span>
+            <span className="text-gray-800 mr-2">{user?.name}</span>
             <div className="h-8 w-8 rounded-full bg-gray-500 flex items-center justify-center text-white font-medium">
-              {user.name.charAt(0)}
+              {user?.name.charAt(0)}
             </div>
           </div>
         </header>

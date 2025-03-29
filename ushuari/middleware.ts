@@ -1,3 +1,4 @@
+// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
@@ -9,6 +10,8 @@ const PUBLIC_ROUTES = [
   "/",
   "/auth/login",
   "/auth/register",
+  "/auth/register/user",
+  "/auth/register/organization",
   "/api/auth/login",
   "/api/auth/register",
   "/api/auth/me",

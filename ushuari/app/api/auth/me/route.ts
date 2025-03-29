@@ -1,4 +1,3 @@
-// app/api/auth/me/route.ts
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import jwt from "jsonwebtoken";
@@ -9,7 +8,7 @@ export async function GET(request: Request) {
   try {
     // Get the token from cookies
     const cookieStore = cookies();
-    const token = cookieStore.get("token")?.value;
+    const token = await cookieStore.get("token")?.value;
 
     // Check if token exists
     if (!token) {
@@ -22,7 +21,7 @@ export async function GET(request: Request) {
     // Verify token
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || "fallback_secret"
+      process.env.JWT_SECRET || "ushuari-jwt-secret"
     ) as any;
 
     // Get database instance

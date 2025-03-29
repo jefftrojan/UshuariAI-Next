@@ -16,6 +16,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // For admin role, check if email is allowed
+    if (role === "admin") {
+      const adminEmails = process.env.ADMIN_EMAILS?.split(",") || [];
+      if (!adminEmails.includes(email)) {
+        return NextResponse.json(
+          { success: false, message: "Not authorized to register as admin" },
+          { status: 403 }
+        );
+      }
+    }
+
     const db = await getDb();
 
     // Check if user already exists
@@ -46,7 +57,7 @@ export async function POST(request: Request) {
       const orgResult = await db.collection("organizations").insertOne({
         name,
         email,
-        status: "pending",
+        status: "pending", // Organizations need admin approval
         createdAt: new Date(),
         contactPerson: name,
         specialties: [],

@@ -6,18 +6,20 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  avatar?: string;
   organizationId?: string;
+  organizationStatus?: "pending" | "approved" | "rejected";
 }
 
-export interface Case {
+export interface Call {
   id: string;
   title: string;
   description: string;
   status: "pending" | "in-progress" | "resolved" | "rejected";
   createdAt: string;
   userId: string;
+  userName?: string;
   organizationId?: string;
+  organizationName?: string;
   audioUrl?: string;
   transcription?: string;
   priority: "low" | "medium" | "high" | "urgent";

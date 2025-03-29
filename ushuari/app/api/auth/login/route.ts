@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "ushuari-jwt-secret";
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const { email, password, role } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -18,7 +18,14 @@ export async function POST(request: Request) {
     }
 
     const db = await getDb();
-    const user = await db.collection("users").findOne({ email });
+
+    // Query with role if specified (helpful for admin login)
+    const query: any = { email };
+    if (role) {
+      query.role = role;
+    }
+
+    const user = await db.collection("users").findOne(query);
 
     if (!user) {
       return NextResponse.json(
@@ -33,6 +40,17 @@ export async function POST(request: Request) {
         { success: false, message: "Invalid email or password" },
         { status: 401 }
       );
+    }
+
+    // If admin login, verify email is in allowed list
+    if (user.role === "admin") {
+      const adminEmails = process.env.ADMIN_EMAILS?.split(",") || [];
+      if (!adminEmails.includes(user.email)) {
+        return NextResponse.json(
+          { success: false, message: "Not authorized as admin" },
+          { status: 403 }
+        );
+      }
     }
 
     // Get organization data if user is organization

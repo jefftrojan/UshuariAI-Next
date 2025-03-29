@@ -1,10 +1,11 @@
+// app/auth/login/page.tsx
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/useAuthStore";
-import { toast } from "react-hot-toast";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -25,7 +26,7 @@ export default function LoginPage() {
         const user = useAuthStore.getState().user;
         toast.success(`Welcome back, ${user?.name}!`);
 
-        // Use the auth store's redirect function
+        // Redirect to appropriate dashboard
         redirectToDashboard(router);
       } else {
         toast.error("Invalid email or password");

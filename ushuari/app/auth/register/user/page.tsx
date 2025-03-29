@@ -1,3 +1,4 @@
+// app/auth/register/user/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -5,15 +6,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import { useAuthStore } from "@/store/useAuthStore";
-import type { UserRole } from "@/store/useAuthStore";
 
-export default function RegisterPage() {
+export default function UserRegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  // Add this line to define selectedRole state
-  const [selectedRole, setSelectedRole] = useState<UserRole>("user");
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
@@ -36,17 +34,11 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const success = await register(name, email, password, selectedRole);
+      const success = await register(name, email, password, "user");
 
       if (success) {
         toast.success("Account created successfully!");
-
-        // Redirect based on role
-        if (selectedRole === "organization") {
-          router.push("/organization/dashboard");
-        } else {
-          router.push("/dashboard");
-        }
+        router.push("/dashboard");
       } else {
         const errorMsg =
           useAuthStore.getState().error ||
@@ -66,7 +58,7 @@ export default function RegisterPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
+            Create a user account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{" "}
@@ -80,36 +72,6 @@ export default function RegisterPage() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Account Type
-            </label>
-            <div className="mt-2 flex">
-              <button
-                type="button"
-                onClick={() => setSelectedRole("user")}
-                className={`relative flex-1 py-2 px-4 text-sm font-medium rounded-l-md ${
-                  selectedRole === "user"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
-                }`}
-              >
-                Individual
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedRole("organization")}
-                className={`relative flex-1 py-2 px-4 text-sm font-medium rounded-r-md ${
-                  selectedRole === "organization"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
-                }`}
-              >
-                Organization
-              </button>
-            </div>
-          </div>
-
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="name" className="sr-only">
@@ -183,8 +145,17 @@ export default function RegisterPage() {
               disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {isLoading ? "Creating account..." : "Create account"}
+              {isLoading ? "Creating account..." : "Create user account"}
             </button>
+          </div>
+
+          <div className="text-center">
+            <Link
+              href="/auth/register/organization"
+              className="text-sm text-indigo-600 hover:text-indigo-500"
+            >
+              Register as an organization instead
+            </Link>
           </div>
         </form>
       </div>
