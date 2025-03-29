@@ -136,12 +136,12 @@ export default function CallRecorder({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-lg font-medium mb-4">Record Your Legal Question</h3>
+    <div className="bg-gray-800/50 rounded-lg shadow-md p-6">
+      <h3 className="text-lg font-medium mb-4 text-white">Record Your Legal Question</h3>
 
       <div className="flex flex-col space-y-4">
         {/* Audio visualization or player */}
-        <div className="w-full h-20 bg-gray-100 rounded-lg flex items-center justify-center">
+        <div className="w-full h-20 bg-gray-700/50 rounded-lg flex items-center justify-center">
           {audioUrl ? (
             <audio src={audioUrl} controls className="w-full h-10" />
           ) : (
@@ -177,7 +177,7 @@ export default function CallRecorder({
               className={`p-4 rounded-full ${
                 isRecording
                   ? "bg-red-500 hover:bg-red-600"
-                  : "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600"
               } text-white focus:outline-none shadow-md`}
             >
               {isRecording ? (

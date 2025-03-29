@@ -1,4 +1,3 @@
-// app/organization/dashboard/page.tsx - Fixed version
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
-import axios from "axios";
-import OrganizationApprovalNotification from "@/components/OrganizationApprovalNotification";
 
 interface Call {
   id: string;
@@ -20,7 +17,6 @@ interface Call {
   priority: "low" | "medium" | "high" | "urgent";
 }
 
-// Mock data for organization's assigned calls
 const MOCK_ORG_CALLS: Call[] = [
   {
     id: "101",
@@ -57,71 +53,32 @@ const MOCK_ORG_CALLS: Call[] = [
 export default function OrganizationDashboard() {
   const [calls, setCalls] = useState<Call[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [organizationStatus, setOrganizationStatus] =
-    useState<string>("pending");
-  const [showStatusBanner, setShowStatusBanner] = useState(true);
+  const [organizationStatus, setOrganizationStatus] = useState<string>("pending");
 
   const router = useRouter();
   const { user, isAuthenticated, checkAuth, logout } = useAuthStore();
 
-  // Check authentication on load
   useEffect(() => {
     const init = async () => {
-      setIsLoading(true);
       const isAuth = await checkAuth();
-
       if (!isAuth) {
         router.push("/auth/login");
-        return;
-      }
-
-      if (user?.role !== "organization") {
-        // Redirect to appropriate dashboard based on role
+      } else if (user?.role !== "organization") {
         if (user?.role === "admin") {
           router.push("/admin/dashboard");
         } else if (user?.role === "user") {
           router.push("/dashboard");
         }
-        return;
-      }
-
-      // Get the latest organization status directly from the database
-      try {
-        const response = await axios.get(
-          `/api/organizations/status?userId=${user.id}`
-        );
-        if (response.data.success) {
-          setOrganizationStatus(response.data.status);
-
-          // Only load calls if organization is approved
-          if (response.data.status === "approved") {
-            setCalls(MOCK_ORG_CALLS);
-          }
-        } else {
-          // Fallback to user object if API fails
-          if (user.organizationStatus) {
-            setOrganizationStatus(user.organizationStatus);
-
-            if (user.organizationStatus === "approved") {
-              setCalls(MOCK_ORG_CALLS);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching organization status:", error);
-        // Fallback to user object
+      } else {
         if (user.organizationStatus) {
           setOrganizationStatus(user.organizationStatus);
-
-          if (user.organizationStatus === "approved") {
-            setCalls(MOCK_ORG_CALLS);
-          }
         }
-      } finally {
+        if (user.organizationStatus === "approved") {
+          setCalls(MOCK_ORG_CALLS);
+        }
         setIsLoading(false);
       }
     };
-
     init();
   }, [checkAuth, router, user]);
 
@@ -143,24 +100,24 @@ export default function OrganizationDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );
   }
 
-  // If organization status is pending
+  // Status screens
   if (organizationStatus === "pending") {
     return (
-      <div className="min-h-screen bg-gray-100">
-        <header className="bg-white shadow">
+      <div className="min-h-screen bg-black">
+        <header className="bg-gray-900 border-b border-green-900/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-blue-800">Ushuari</h1>
+            <h1 className="text-2xl font-bold text-white">Ushuari</h1>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">{user?.name}</span>
+              <span className="text-white/80">{user?.name}</span>
               <button
                 onClick={handleLogout}
-                className="bg-blue-700 text-white hover:bg-blue-800 px-4 py-2 rounded-md text-sm font-medium"
+                className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium"
               >
                 Sign Out
               </button>
@@ -169,11 +126,11 @@ export default function OrganizationDashboard() {
         </header>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-4">
+          <div className="bg-gray-900/80 border border-green-900/20 rounded-lg p-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-500/10 rounded-full mb-4 border border-yellow-500/20">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-8 w-8 text-yellow-500"
+                className="h-8 w-8 text-yellow-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -186,91 +143,34 @@ export default function OrganizationDashboard() {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-white mb-2">
               Account Pending Approval
             </h2>
-            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+            <p className="text-white/70 mb-6 max-w-2xl mx-auto">
               Your organization account is currently pending approval by our
               administrators. You will receive full access to the platform once
               your account is approved.
             </p>
-            <div className="mt-6 border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-medium mb-3">What happens next?</h3>
-              <div className="grid md:grid-cols-3 gap-4 text-left">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center mb-2">
-                    <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center mr-2 font-medium">
-                      1
-                    </span>
-                    <h4 className="font-medium">Admin Review</h4>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Our admin team is reviewing your organization details
-                  </p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center mb-2">
-                    <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center mr-2 font-medium">
-                      2
-                    </span>
-                    <h4 className="font-medium">Approval Decision</h4>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    We'll make a decision within 1-2 business days
-                  </p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center mb-2">
-                    <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center mr-2 font-medium">
-                      3
-                    </span>
-                    <h4 className="font-medium">Get Started</h4>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Upon approval, you'll get full access to calls and features
-                  </p>
-                </div>
-              </div>
-            </div>
-            <p className="text-gray-500 text-sm mt-6">
-              If you have any questions, please contact our support team at{" "}
-              <a
-                href="mailto:support@ushuari.com"
-                className="text-blue-600 hover:underline"
-              >
-                support@ushuari.com
-              </a>
+            <p className="text-white/50 text-sm">
+              If you have any questions, please contact our support team.
             </p>
-
-            {/* Add refresh button */}
-            <button
-              onClick={async () => {
-                setIsLoading(true);
-                await checkAuth();
-                window.location.reload();
-              }}
-              className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Check Approval Status
-            </button>
           </div>
         </main>
       </div>
     );
   }
 
-  // If organization status is rejected
   if (organizationStatus === "rejected") {
     return (
-      <div className="min-h-screen bg-gray-100">
-        <header className="bg-white shadow">
+      <div className="min-h-screen bg-black">
+        <header className="bg-gray-900 border-b border-red-900/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-blue-800">Ushuari</h1>
+            <h1 className="text-2xl font-bold text-white">Ushuari</h1>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">{user?.name}</span>
+              <span className="text-white/80">{user?.name}</span>
               <button
                 onClick={handleLogout}
-                className="bg-blue-700 text-white hover:bg-blue-800 px-4 py-2 rounded-md text-sm font-medium"
+                className="bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white px-4 py-2 rounded-md text-sm font-medium"
               >
                 Sign Out
               </button>
@@ -279,11 +179,11 @@ export default function OrganizationDashboard() {
         </header>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+          <div className="bg-gray-900/80 border border-red-900/20 rounded-lg p-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500/10 rounded-full mb-4 border border-red-500/20">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-8 w-8 text-red-500"
+                className="h-8 w-8 text-red-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -296,76 +196,22 @@ export default function OrganizationDashboard() {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-white mb-2">
               Account Application Rejected
             </h2>
-            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+            <p className="text-white/70 mb-6 max-w-2xl mx-auto">
               We're sorry, but your organization account application has been
               rejected. This may be due to incomplete information or not meeting
               our eligibility criteria.
             </p>
-            <div className="mt-6 border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-medium mb-3">What you can do next</h3>
-              <div className="grid md:grid-cols-2 gap-4 text-left max-w-2xl mx-auto">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Contact Support</h4>
-                  <p className="text-sm text-gray-600">
-                    Reach out to our support team for more information about why
-                    your application was rejected and how you can improve it.
-                  </p>
-                  <a
-                    href="mailto:support@ushuari.com"
-                    className="text-blue-600 hover:underline text-sm inline-block mt-2"
-                  >
-                    Email support@ushuari.com
-                  </a>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Reapply</h4>
-                  <p className="text-sm text-gray-600">
-                    You may be able to reapply after addressing the issues with
-                    your application. Please wait at least 30 days before
-                    reapplying.
-                  </p>
-                  <button
-                    className="text-blue-600 hover:underline text-sm inline-block mt-2"
-                    onClick={() =>
-                      toast.success(
-                        "Reapplication will be available after 30 days."
-                      )
-                    }
-                  >
-                    Reapply after 30 days
-                  </button>
-                </div>
-              </div>
-            </div>
-            <p className="text-gray-500 text-sm mt-6">
-              For more information, please contact our support team at{" "}
-              <a
-                href="mailto:support@ushuari.com"
-                className="text-blue-600 hover:underline"
-              >
-                support@ushuari.com
-              </a>
+            <p className="text-white/50 text-sm mb-6">
+              For more information, please contact our support team.
             </p>
             <button
               onClick={handleLogout}
-              className="mt-8 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+              className="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700 border border-gray-700"
             >
               Back to Home
-            </button>
-
-            {/* Add refresh button */}
-            <button
-              onClick={async () => {
-                setIsLoading(true);
-                await checkAuth();
-                window.location.reload();
-              }}
-              className="mt-6 ml-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Check Status Again
             </button>
           </div>
         </main>
@@ -373,19 +219,17 @@ export default function OrganizationDashboard() {
     );
   }
 
-  // Organization is approved - show dashboard
+  // Main dashboard for approved organizations
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
+    <div className="min-h-screen bg-black/30 rounded-2xl">
+      <header className="bg-gray-900 border-b border-green-900/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-800">
-            Ushuari Organization
-          </h1>
+          <h1 className="text-2xl font-bold text-white">Ushuari</h1>
           <div className="flex items-center space-x-4">
-            <span className="text-gray-700">{user?.name}</span>
+            <span className="text-white/80">{user?.name}</span>
             <button
               onClick={handleLogout}
-              className="bg-blue-700 text-white hover:bg-blue-800 px-4 py-2 rounded-md text-sm font-medium"
+              className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium"
             >
               Sign Out
             </button>
@@ -395,112 +239,108 @@ export default function OrganizationDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Welcome to Your Organization Dashboard
+          <h2 className="text-2xl font-bold text-white mb-4">
+            Organization Dashboard
           </h2>
-          <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-green-500"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  ></path>
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-green-700">
-                  Your organization has been approved! You now have full access
-                  to manage cases.
-                </p>
-              </div>
-            </div>
-          </div>
+          <p className="text-white/70">
+            Manage and respond to legal assistance calls from users.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-medium mb-4">Total Cases</h3>
-            <p className="text-3xl font-bold text-blue-600">{calls.length}</p>
+          <div className="bg-gray-900/80 border border-green-900/20 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-white/80 mb-4">Total Calls</h3>
+            <p className="text-3xl font-bold text-white">{calls.length}</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-medium mb-4">Pending</h3>
-            <p className="text-3xl font-bold text-yellow-500">
+          <div className="bg-gray-900/80 border border-yellow-900/20 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-white/80 mb-4">Pending</h3>
+            <p className="text-3xl font-bold text-white">
               {calls.filter((c) => c.status === "pending").length}
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-medium mb-4">In Progress</h3>
-            <p className="text-3xl font-bold text-blue-500">
+          <div className="bg-gray-900/80 border border-blue-900/20 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-white/80 mb-4">In Progress</h3>
+            <p className="text-3xl font-bold text-white">
               {calls.filter((c) => c.status === "in-progress").length}
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-medium mb-4">Resolved</h3>
-            <p className="text-3xl font-bold text-green-500">
+          <div className="bg-gray-900/80 border border-emerald-900/20 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-white/80 mb-4">Resolved</h3>
+            <p className="text-3xl font-bold text-white">
               {calls.filter((c) => c.status === "resolved").length}
             </p>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-medium mb-4">Assigned Cases</h2>
+        <div className="bg-gray-900/80 border border-green-900/20 rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-medium text-white">Assigned Calls</h2>
+          </div>
 
           {calls.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No cases assigned to your organization yet.
+            <div className="text-center py-8 text-white/50">
+              No calls have been assigned to your organization yet.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-800">
+                <thead className="bg-gray-800/50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Case
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
+                    >
+                      Title
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Client
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
+                    >
+                      User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
+                    >
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
+                    >
                       Priority
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
+                    >
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-white/50 uppercase tracking-wider"
+                    >
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-800">
                   {calls.map((call) => (
                     <tr key={call.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-white">
                           {call.title}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {call.description.substring(0, 50)}
-                          {call.description.length > 50 ? "..." : ""}
+                        <div className="text-sm text-white/50">
+                          {call.description.substring(0, 50)}...
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {call.userName || "Unknown User"}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          ID: {call.userId}
+                        <div className="text-sm text-white">
+                          {call.userName}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -508,12 +348,12 @@ export default function OrganizationDashboard() {
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                           ${
                             call.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
+                              ? "bg-yellow-500/10 text-yellow-400"
                               : call.status === "in-progress"
-                              ? "bg-blue-100 text-blue-800"
+                              ? "bg-blue-500/10 text-blue-400"
                               : call.status === "resolved"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-green-500/10 text-green-400"
+                              : "bg-red-500/10 text-red-400"
                           }`}
                         >
                           {call.status}
@@ -524,46 +364,44 @@ export default function OrganizationDashboard() {
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                           ${
                             call.priority === "low"
-                              ? "bg-green-100 text-green-800"
+                              ? "bg-green-500/10 text-green-400"
                               : call.priority === "medium"
-                              ? "bg-blue-100 text-blue-800"
+                              ? "bg-blue-500/10 text-blue-400"
                               : call.priority === "high"
-                              ? "bg-orange-100 text-orange-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-orange-500/10 text-orange-400"
+                              : "bg-red-500/10 text-red-400"
                           }`}
                         >
                           {call.priority}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white/50">
                         {new Date(call.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           <Link
-                            href={`/organization/cases/${call.id}`}
-                            className="text-blue-600 hover:text-blue-900"
+                            href={`/organization/calls/${call.id}`}
+                            className="text-green-400 hover:text-green-300"
                           >
                             View
                           </Link>
-
                           {call.status === "pending" && (
                             <button
                               onClick={() =>
                                 updateCallStatus(call.id, "in-progress")
                               }
-                              className="text-indigo-600 hover:text-indigo-900"
+                              className="text-blue-400 hover:text-blue-300"
                             >
-                              Start
+                              Accept
                             </button>
                           )}
-
                           {call.status === "in-progress" && (
                             <button
                               onClick={() =>
                                 updateCallStatus(call.id, "resolved")
                               }
-                              className="text-green-600 hover:text-green-900"
+                              className="text-green-400 hover:text-green-300"
                             >
                               Resolve
                             </button>
