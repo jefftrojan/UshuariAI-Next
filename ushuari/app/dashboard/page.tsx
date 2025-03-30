@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
-import CallRecorder from "@/components/CallRecorder";
+import { VoiceChat } from "@/components/VoiceChat";
+import { LiveKitRoom } from "@livekit/components-react";
 
 // Mock data for user's calls
 interface Call {
@@ -44,6 +45,7 @@ const MOCK_CALLS: Call[] = [
 export default function UserDashboard() {
   const [calls, setCalls] = useState<Call[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
 
   const router = useRouter();
   const { user, isAuthenticated, checkAuth } = useAuthStore();
@@ -69,6 +71,23 @@ export default function UserDashboard() {
 
     init();
   }, [checkAuth, router, user]);
+
+  // Get LiveKit token
+  useEffect(() => {
+    const getToken = async () => {
+      try {
+        const response = await fetch(`/api/voice?roomName=user-${user?.id}&participantName=${user?.name}`);
+        const data = await response.json();
+        setToken(data.token);
+      } catch (error) {
+        console.error('Error getting LiveKit token:', error);
+      }
+    };
+
+    if (user?.id && user?.name) {
+      getToken();
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     const { logout } = useAuthStore.getState();
@@ -106,15 +125,15 @@ export default function UserDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <header className="bg-gray-900/80 backdrop-blur-md border-b border-green-900/20">
+    <div className="min-h-screen bg-black/30 rounded-2xl">
+      <header className="bg-gray-900 border-b border-green-900/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-white">Ushuari</h1>
+          <h1 className="text-2xl font-bold text-white">Ushauri</h1>
           <div className="flex items-center space-x-4">
-            <span className="text-emerald-100">{user?.name}</span>
+            <span className="text-white/80">{user?.name}</span>
             <button
               onClick={handleLogout}
-              className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-all duration-300"
+              className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium"
             >
               Sign Out
             </button>
@@ -124,17 +143,15 @@ export default function UserDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Welcome, {user?.name}
-          </h2>
+          <h2 className="text-2xl font-bold text-white mb-4">Your Dashboard</h2>
           <p className="text-white/70">
-            Make calls to get legal assistance from qualified organizations.
+            Record your legal questions and track their status.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="md:col-span-3 bg-gray-900/40 backdrop-blur-sm border border-green-900/20 rounded-2xl p-6 shadow-lg shadow-green-900/10">
-            <CallRecorder onCallRecorded={handleCallRecorded} />
+            <VoiceChat onCallRecorded={handleCallRecorded} roomName={""} isInitialized={false} />
           </div>
 
           <div className="bg-gray-900/40 backdrop-blur-sm border border-green-900/20 rounded-2xl p-6 shadow-lg shadow-green-900/10">
@@ -173,7 +190,7 @@ export default function UserDashboard() {
             <div className="text-center py-8 text-white/50">
               You haven't submitted any legal inquiries yet.
               <br />
-              Use the call recorder above to make your first inquiry.
+              Use the voice chat above to make your first inquiry.
             </div>
           ) : (
             <div className="overflow-x-auto">
