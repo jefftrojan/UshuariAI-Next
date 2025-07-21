@@ -2,28 +2,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import { Organization } from "@/types";
 import axios from "axios";
 
-export default function OrganizationDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function OrganizationDetailPage() {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notes, setNotes] = useState("");
   const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
 
   useEffect(() => {
     const fetchOrganization = async () => {
       setIsLoading(true);
       try {
         const response = await axios.get(
-          `/api/admin/organizations/${params.id}`
+          `/api/admin/organizations/${id}`
         );
 
         if (response.data.success) {
@@ -42,7 +40,7 @@ export default function OrganizationDetailPage({
     };
 
     fetchOrganization();
-  }, [params.id]);
+  }, [id]);
 
   const updateOrganizationStatus = async (
     newStatus: "approved" | "rejected"
@@ -51,7 +49,7 @@ export default function OrganizationDetailPage({
 
     try {
       const response = await axios.post(
-        `/api/admin/organizations/${params.id}/approve`,
+        `/api/admin/organizations/${id}/approve`,
         {
           status: newStatus,
           notes: notes.trim() || undefined,
@@ -68,7 +66,7 @@ export default function OrganizationDetailPage({
         // Create notification for the organization
         try {
           await axios.post("/api/notifications/organization-status", {
-            organizationId: params.id,
+            organizationId: id,
             status: newStatus,
             message:
               newStatus === "approved"
