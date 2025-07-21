@@ -5,10 +5,25 @@ import { connectToDatabase } from '@/lib/mongodb';
 import OpenAI from 'openai';
 import { AccessToken } from 'livekit-server-sdk';
 
-const coordinator = new AgentCoordinator();
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid build-time errors
+let coordinator: AgentCoordinator | null = null;
+let openai: OpenAI | null = null;
+
+function getCoordinator() {
+  if (!coordinator) {
+    coordinator = new AgentCoordinator();
+  }
+  return coordinator;
+}
+
+function getOpenAI() {
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,7 +43,7 @@ export async function POST(req: NextRequest) {
     const audioBuffer = Buffer.from(audio.split(',')[1], 'base64');
 
     // Transcribe audio using OpenAI Whisper
-    const transcription = await openai.audio.transcriptions.create({
+    const transcription = await getOpenAI().audio.transcriptions.create({
       file: new File([audioBuffer], 'audio.wav', { type: 'audio/wav' }),
       model: 'whisper-1',
       language: language,
@@ -36,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     // Handle the message
    // In your route.ts file
-const response = await coordinator.handleMessage(
+const response = await getCoordinator().handleMessage(
   roomName,             // First parameter should be roomName
   transcription.text,   // Second parameter should be the message
   agentType             // Third parameter should be the agent type

@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid build-time errors
+let openai: OpenAI | null = null;
+
+function getOpenAI() {
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 export async function POST(request: Request) {
   try {
@@ -24,7 +32,7 @@ export async function POST(request: Request) {
     };
 
     // Generate speech using OpenAI's TTS
-    const response = await openai.audio.speech.create({
+    const response = await getOpenAI().audio.speech.create({
       model: "tts-1",
       voice: voiceMap[language] || 'alloy',
       input: text,
